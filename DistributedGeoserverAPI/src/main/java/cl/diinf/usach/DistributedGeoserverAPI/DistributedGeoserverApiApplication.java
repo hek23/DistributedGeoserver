@@ -12,9 +12,9 @@ import java.util.List;
 public class DistributedGeoserverApiApplication {
 
 	public static void main(String[] args) {
-		for (String name : Utility.getFileName("../../../SHPFiles/")){
+		/*for (String name : Utility.getFileName("../../../SHPFiles/")){
 			Utility.unzipFile(name,"../../../SHPFiles/");
-		}
+		}*/
 
 		SpringApplication.run(DistributedGeoserverApiApplication.class, args);
 	}
