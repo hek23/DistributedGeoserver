@@ -1,9 +1,10 @@
 package cl.diinf.usach.Model;
 
-public class Workspace {
+public class Store {
+
     public String name;
 
-    Workspace(String name){
+    Store(String name){
         this.name = name;
     }
 }

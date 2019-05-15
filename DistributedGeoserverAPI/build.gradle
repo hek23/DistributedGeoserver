@@ -19,11 +19,14 @@ dependencies {
 	providedRuntime 'org.springframework.boot:spring-boot-starter-tomcat'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	// https://mvnrepository.com/artifact/org.geotools/gt-swing
-	compile group: 'org.geotools', name: 'gt-swing', version: '21.0'
+	//compile group: 'org.geotools', name: 'gt-swing', version: '21.0'
 	// https://mvnrepository.com/artifact/org.geotools/gt-shapefile
 	compile group: 'org.geotools', name: 'gt-shapefile', version: '21.0'
 	// https://mvnrepository.com/artifact/org.geotools.jdbc/gt-jdbc-postgis
 	compile group: 'org.geotools.jdbc', name: 'gt-jdbc-postgis', version: '21.0'
+	// https://mvnrepository.com/artifact/org.apache.httpcomponents/httpclient
+	compile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.3.4'
+
 
 
 

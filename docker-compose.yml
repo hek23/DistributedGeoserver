@@ -1,11 +1,10 @@
 version: '3.7'
 
 services:
-   #api:
-   dbtester:
-      image: adminer
-      ports:
-         - "9000:8080"
+   #dbtester:
+   #   image: adminer
+   #   ports:
+   #      - "9000:8080"
    db:
       image: kartoza/postgis:11.0-2.5
       ports:
@@ -18,7 +17,8 @@ services:
       #volumes:
       #   - ./volumes/GeoDbData:/var/lib/postgresql/data   
    geoserver:
-      image: kartoza/geoserver:2.15.0
+      container_name: 'geoservertester'
+      build: .
       volumes:
       -  type: volume
          source: geoserverdata
@@ -44,8 +44,8 @@ services:
 volumes:
    geoserverdata:
    shpfiles:
-      driver: local
-      driver_opts:
-         type: none
-         device: $PWD/SHPFiles
-         o: bind
+      #driver: local
+      #driver_opts:
+      #   type: none
+         #device: $PWD/SHPFiles
+         #o: bind
