@@ -33,7 +33,7 @@ class SHPImporter {
 
     @PostMapping("/import")
     @ResponseBody
-    public ResponseEntity importSHPFiles(@RequestParam("filename") String name,
+    public ResponseEntity importSHPFiles(@RequestParam("datastore") String dsname,
                                  @RequestParam("coordinateSystem") String coordSystem,
                                  @RequestParam("workspace") String workspaceName,
                                  @RequestParam("file") MultipartFile file) {
@@ -45,20 +45,15 @@ class SHPImporter {
             Workspace.create(workspaceName);
         }
         //Then check Datastore. Get out if exist!
-        if(Datastore.check(name,workspaceName) == 404){
-            Datastore.create(name, workspaceName);
+        if(Datastore.check(dsname,workspaceName) == 404){
+            Datastore.create(dsname, workspaceName);
         }
-        else{
-
-            return new ResponseEntity((ObjectNode)mapper.createObjectNode().put("error","El datastore ya existe"),HttpStatus.CONFLICT);
-        }
-
         //Create base node
         ObjectNode importnode = mapper.createObjectNode();
         //Init Import object
         //Init Datastore
         ObjectNode datastore = mapper.createObjectNode();
-        datastore.put("name", name);
+        datastore.put("name", dsname);
         ObjectNode targetStore = mapper.createObjectNode();
         targetStore.set("dataStore", datastore);
         //Init Workspace
@@ -81,19 +76,21 @@ class SHPImporter {
 
         //File treatment
         //Save file
-        fileStorageService.storeFile(file);
+        String filename = file.getOriginalFilename();
+        System.out.println(filename);
+        fileStorageService.storeFile(file, filename);
 
         //Use to send
 
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-        body.add("filedata", fileStorageService.loadFileAsResource(name+".zip"));
-        body.add("name",file.getName());
+        body.add("filedata", fileStorageService.loadFileAsResource(filename+".zip"));
+        body.add("name",filename);
 
         RestResponse formResponse = RestBridge.sendForm("imports/"+importID+"/tasks",body);
         //Clean file
         try {
 
-            Files.deleteIfExists(fileStorageService.getFileStorageLocation().resolve(name+".zip"));
+            Files.deleteIfExists(fileStorageService.getFileStorageLocation().resolve(filename+".zip"));
         } catch (IOException e) {
             System.out.println("fallo");
         }
