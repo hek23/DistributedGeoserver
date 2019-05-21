@@ -83,14 +83,14 @@ class SHPImporter {
         //Use to send
 
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-        body.add("filedata", fileStorageService.loadFileAsResource(filename+".zip"));
+        body.add("filedata", fileStorageService.loadFileAsResource(filename));
         body.add("name",filename);
 
         RestResponse formResponse = RestBridge.sendForm("imports/"+importID+"/tasks",body);
         //Clean file
         try {
 
-            Files.deleteIfExists(fileStorageService.getFileStorageLocation().resolve(filename+".zip"));
+            Files.deleteIfExists(fileStorageService.getFileStorageLocation().resolve(filename));
         } catch (IOException e) {
             System.out.println("fallo");
         }
