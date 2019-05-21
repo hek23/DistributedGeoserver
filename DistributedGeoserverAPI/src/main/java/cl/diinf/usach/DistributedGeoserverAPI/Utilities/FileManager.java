@@ -1,4 +1,4 @@
-package cl.diinf.usach.Model;
+package cl.diinf.usach.DistributedGeoserverAPI.Utilities;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-public class Utility {
+public final class FileManager {
 
     //"../../../SHPFiles"
     public static List<String> getFileName(String path){
@@ -73,4 +73,5 @@ public class Utility {
             ex.printStackTrace();
         }
     }
+
 }

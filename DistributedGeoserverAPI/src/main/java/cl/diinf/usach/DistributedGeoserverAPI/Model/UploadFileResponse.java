@@ -1,4 +1,4 @@
-package cl.diinf.usach.DistributedGeoserverAPI;
+package cl.diinf.usach.DistributedGeoserverAPI.Model;
 
 public class UploadFileResponse {
     private String fileName;

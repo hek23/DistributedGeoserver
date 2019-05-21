@@ -1,4 +1,4 @@
-package cl.diinf.usach.Model;
+package cl.diinf.usach.DistributedGeoserverAPI.Model;
 
 public class ImportInfo {
     public String storeName;

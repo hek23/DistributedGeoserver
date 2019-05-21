@@ -18,10 +18,17 @@ public class FileStorageService {
 
     private final Path fileStorageLocation;
 
+
+    public Path getFileStorageLocation() {
+        return this.fileStorageLocation;
+    }
+
     @Autowired
     public FileStorageService(FileStorageProperties fileStorageProperties) {
         this.fileStorageLocation = Paths.get(fileStorageProperties.getUploadDir())
                 .toAbsolutePath().normalize();
+        System.out.println("PATH");
+        System.out.println(this.fileStorageLocation);
 
         try {
             Files.createDirectories(this.fileStorageLocation);

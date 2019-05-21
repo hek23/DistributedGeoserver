@@ -1,10 +1,10 @@
 version: '3.7'
 
 services:
-   #dbtester:
-   #   image: adminer
-   #   ports:
-   #      - "9000:8080"
+   dbtester:
+      image: adminer
+      ports:
+         - "9000:8080"
    db:
       image: kartoza/postgis:11.0-2.5
       ports:
@@ -19,15 +19,15 @@ services:
    geoserver:
       container_name: 'geoservertester'
       build: .
-      #volumes:
-      #-  type: volume
-      #   source: geoserverdata
-      #  target: /opt/geoserver/data_dir/
-      #   consistency: consistent
-      #-  type: volume
-      #   source: shpfiles
-      #   target: /opt/geoserver/shpfilestmp
-      #   consistency: cached
+      volumes:
+      -  type: volume
+         source: geoserverdata
+         target: /opt/geoserver/data_dir/
+         consistency: consistent
+      -  type: volume
+         source: shpfiles
+         target: /opt/geoserver/shpfilestmp
+         consistency: cached
       ports:
         - "8600:8080"
       restart: on-failure
@@ -41,9 +41,11 @@ services:
         timeout: 10s
         retries: 3
 
-#volumes:
-#   geoserverdata:
-#   shpfiles:
+
+
+volumes:
+   geoserverdata:
+   shpfiles:
       #driver: local
       #driver_opts:
       #   type: none

@@ -1,5 +1,6 @@
 package cl.diinf.usach.DistributedGeoserverAPI;
 
+import cl.diinf.usach.DistributedGeoserverAPI.Model.Datastore;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.impl.auth.BasicScheme;
 import org.springframework.beans.factory.annotation.Value;
