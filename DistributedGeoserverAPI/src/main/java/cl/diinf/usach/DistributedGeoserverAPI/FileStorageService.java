@@ -39,9 +39,9 @@ public class FileStorageService {
         }
     }
 
-    public String storeFile(MultipartFile file, String filename) {
+    public String storeFile(MultipartFile file) {
         // Normalize file name
-        String fileName = StringUtils.cleanPath(filename);
+        String fileName = StringUtils.cleanPath(file.getOriginalFilename());
 
         try {
             // Check if the file's name contains invalid characters

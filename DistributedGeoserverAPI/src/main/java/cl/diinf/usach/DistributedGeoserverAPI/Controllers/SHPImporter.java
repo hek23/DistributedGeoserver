@@ -37,6 +37,7 @@ class SHPImporter {
                                  @RequestParam("coordinateSystem") String coordSystem,
                                  @RequestParam("workspace") String workspaceName,
                                  @RequestParam("file") MultipartFile file) {
+
         //Create JsonMapper
         ObjectMapper mapper = new ObjectMapper();
         //First of all, we need to check the workspace
@@ -76,9 +77,9 @@ class SHPImporter {
 
         //File treatment
         //Save file
-        String filename = file.getOriginalFilename();
-        System.out.println(filename);
-        fileStorageService.storeFile(file, filename);
+
+
+        String filename = fileStorageService.storeFile(file);
 
         //Use to send
 
