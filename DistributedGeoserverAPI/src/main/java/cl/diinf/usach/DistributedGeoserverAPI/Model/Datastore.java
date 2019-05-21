@@ -50,7 +50,7 @@ public class Datastore {
         keyBind = mapper.createObjectNode();
         //Do again
         keyBind.put("@key","database");
-        keyBind.put("$",name);
+        keyBind.put("$","geoserverDBTest");
         entry.add(keyBind);
         keyBind = mapper.createObjectNode();
         //Do again
