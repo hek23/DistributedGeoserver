@@ -4,13 +4,6 @@ import cl.diinf.usach.DistributedGeoserverAPI.Utilities.RestBridge;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.util.EntityUtils;
-
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.List;
 

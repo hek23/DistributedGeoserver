@@ -7,6 +7,7 @@ services:
          - "9000:8080"
    db:
       image: kartoza/postgis:11.0-2.5
+      container_name: 'mainPostgres'
       ports:
          - "25434:5432"
       env_file:
@@ -18,7 +19,9 @@ services:
       #   - ./volumes/GeoDbData:/var/lib/postgresql/data   
    geoserver:
       container_name: 'geoservertester'
-      build: .
+      build: 
+         context: ./
+         dockerfile: geoserver.dockerfile
       volumes:
       -  type: volume
          source: geoserverdata
@@ -40,6 +43,13 @@ services:
         interval: 1m30s
         timeout: 10s
         retries: 3
+   javabridge:
+      container_name: 'distApi'
+      build: 
+         context: ./
+         dockerfile: javaApi.dockerfile
+      ports:
+         - "8800:8080"
 
 
 

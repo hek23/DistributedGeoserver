@@ -7,9 +7,11 @@ import cl.diinf.usach.DistributedGeoserverAPI.Model.Workspace;
 import cl.diinf.usach.DistributedGeoserverAPI.Utilities.RestBridge;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.apache.http.HttpRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
@@ -30,22 +32,27 @@ class SHPImporter {
     //private UsernamePasswordCredentials geoserverAuth;
 
     @PostMapping("/import")
-    @ResponseStatus(HttpStatus.CREATED)
-    public Object importSHPFiles(@RequestParam("filename") String name,
+    @ResponseBody
+    public ResponseEntity importSHPFiles(@RequestParam("filename") String name,
                                  @RequestParam("coordinateSystem") String coordSystem,
                                  @RequestParam("workspace") String workspaceName,
                                  @RequestParam("file") MultipartFile file) {
+        //Create JsonMapper
+        ObjectMapper mapper = new ObjectMapper();
         //First of all, we need to check the workspace
         if(Workspace.check(workspaceName)==404){
             //Doesn't Exist. So, create
             Workspace.create(workspaceName);
         }
-        //Then check Datastore
+        //Then check Datastore. Get out if exist!
         if(Datastore.check(name,workspaceName) == 404){
             Datastore.create(name, workspaceName);
         }
-        //Create JsonMapper
-        ObjectMapper mapper = new ObjectMapper();
+        else{
+
+            return new ResponseEntity((ObjectNode)mapper.createObjectNode().put("error","El datastore ya existe"),HttpStatus.CONFLICT);
+        }
+
         //Create base node
         ObjectNode importnode = mapper.createObjectNode();
         //Init Import object
@@ -96,7 +103,6 @@ class SHPImporter {
         MultiValueMap<String, Object> pgReset = new LinkedMultiValueMap<>();
         pgReset.add("dataStore", "{\"name\":\"postgis\"}");
         try {
-            System.out.println("imports/"+importID+"/tasks/"+ mapper.readTree(formResponse.getResponseSerialized()).get("task").get("id").asText()+"/target");
             RestBridge.sendPut("imports/"+importID+"/tasks/"+ mapper.readTree(formResponse.getResponseSerialized()).get("task").get("id").asText()+"/target",pgReset);
 
         } catch (IOException e) {
@@ -105,13 +111,8 @@ class SHPImporter {
 
         //Activate Processing
         RestBridge.sendPost2("imports/"+importID, null);
-        /*try {
-            //mapper.readTree("{\"dataStore\": }");
-            MultiValueMap<String, Object> resetPg = new LinkedMultiValueMap<>();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }*/
-        return importdefinition;
+
+        return new ResponseEntity(HttpStatus.CREATED);
     }
 
 

@@ -10,28 +10,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import java.util.ArrayList;
 import java.util.List;
 
-/*
-{
-  "dataStore": {
-    "name": "nyc",
-    "connectionParameters": {
-      "entry": [
-        {"@key":"host","$":"localhost"},
-        {"@key":"port","$":"5432"},
-        {"@key":"database","$":"nyc"},
-        {"@key":"user","$":"bob"},
-        {"@key":"passwd","$":"postgres"},
-        {"@key":"dbtype","$":"postgis"}
-      ]
-    }
-  }
-}
-
- */
 //@ConfigurationProperties(prefix = "db")
 public class Datastore {
     String name;
-    static String host = "172.23.0.2";
+    static String host = "mainPostgres";
     static String port = "5432";
     static String dbname = "postgres";
     static String user = "docker";

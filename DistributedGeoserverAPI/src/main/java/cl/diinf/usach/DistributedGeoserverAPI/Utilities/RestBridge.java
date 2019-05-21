@@ -31,7 +31,7 @@ public final class RestBridge {
     //Body puede ser HTTPEntity...
     public static RestResponse sendPost(String endpoint, ObjectNode body, List<String[]> headers) {
         CloseableHttpClient client = HttpClientBuilder.create().build();
-        HttpPost request = new HttpPost("http://localhost:8600/geoserver/rest/" + endpoint);
+        HttpPost request = new HttpPost("http://geoservertester:8080/geoserver/rest/" + endpoint);
         try {
             request.setEntity(new StringEntity(body.toString()));
         } catch (UnsupportedEncodingException e) {
@@ -62,7 +62,7 @@ public final class RestBridge {
     public static RestResponse sendGet(String endpoint, List<String[]> headers){
         CloseableHttpClient client = HttpClientBuilder.create().build();
         ResponseHandler<String> handler = new BasicResponseHandler();
-        HttpGet request = new HttpGet("http://localhost:8600/geoserver/rest/" + endpoint);
+        HttpGet request = new HttpGet("http://geoservertester:8080/geoserver/rest/" + endpoint);
 
         headers.forEach(header -> request.setHeader(header[0],header[1]));
         try {
@@ -94,7 +94,7 @@ public final class RestBridge {
 
         RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<String> response = restTemplate
-                .postForEntity("http://localhost:8600/geoserver/rest/"+endpoint, requestEntity, String.class);
+                .postForEntity("http://geoservertester:8080/geoserver/rest/"+endpoint, requestEntity, String.class);
 
         return new RestResponse(response.getStatusCodeValue(), response.getBody());
     }
@@ -107,7 +107,7 @@ public final class RestBridge {
                 = new HttpEntity<>(entity, headers);
 
         RestTemplate restTemplate = new RestTemplate();
-        restTemplate.put("http://localhost:8600/geoserver/rest/"+endpoint, requestEntity);
+        restTemplate.put("http://geoservertester:8080/geoserver/rest/"+endpoint, requestEntity);
 
         //System.out.println(response.toString());
     }
@@ -120,7 +120,7 @@ public final class RestBridge {
                 = new HttpEntity<>(entity, headers);
 
         RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<String> response = restTemplate.postForEntity("http://localhost:8600/geoserver/rest/"+endpoint, requestEntity, String.class);
+        ResponseEntity<String> response = restTemplate.postForEntity("http://geoservertester:8080/geoserver/rest/"+endpoint, requestEntity, String.class);
 
         System.out.println(response.toString());
     }
