@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,11 +31,10 @@ public class Datastore {
 
     public static int create(String name, String wname){
         //Se envía solicitud al servicio para obtención de Workspace, con RestBridge
-        List<String[]> headers = new ArrayList<String[]>();
-        headers.add(new String[]{"Content-type", "application/json"});
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode dataStore = mapper.createObjectNode();
-        dataStore.put("name",name);
+        MultiValueMap<String, Object> dataStore = new LinkedMultiValueMap<>();
+        dataStore.add("name",name);
+
+
         ObjectNode connectionParameters = mapper.createObjectNode();
         ArrayNode entry = mapper.createArrayNode();
         //Create internal entry
@@ -75,9 +76,6 @@ public class Datastore {
         keyBind.put("@key","create database");
         keyBind.put("$",true);
         entry.add(keyBind);
-
-
-
 
         System.out.println(entry);
         connectionParameters.set("entry",entry);

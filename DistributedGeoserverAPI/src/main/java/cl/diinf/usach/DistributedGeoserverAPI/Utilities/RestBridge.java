@@ -28,100 +28,38 @@ import java.util.List;
 
 public final class RestBridge {
 
-    //Body puede ser HTTPEntity...
-    public static RestResponse sendPost(String endpoint, ObjectNode body, List<String[]> headers) {
-        CloseableHttpClient client = HttpClientBuilder.create().build();
-        HttpPost request = new HttpPost("http://geoservertester:8080/geoserver/rest/" + endpoint);
-        try {
-            request.setEntity(new StringEntity(body.toString()));
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-        headers.forEach(header -> request.setHeader(header[0],header[1]));
-        try {
-
-            request.setHeader(new BasicScheme().authenticate(new UsernamePasswordCredentials("admin", "geoserver"),request,null));
-        } catch (AuthenticationException e) {
-            e.printStackTrace();
-        }
-
-        CloseableHttpResponse response = null;
-
-        RestResponse rr=null;
-        try {
-            response = client.execute(request);
-            rr = new RestResponse(response);
-            client.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return rr;
-    }
-
-    public static RestResponse sendGet(String endpoint, List<String[]> headers){
-        CloseableHttpClient client = HttpClientBuilder.create().build();
-        ResponseHandler<String> handler = new BasicResponseHandler();
-        HttpGet request = new HttpGet("http://geoservertester:8080/geoserver/rest/" + endpoint);
-
-        headers.forEach(header -> request.setHeader(header[0],header[1]));
-        try {
-
-            request.setHeader(new BasicScheme().authenticate(new UsernamePasswordCredentials("admin", "geoserver"),request,null));
-        } catch (AuthenticationException e) {
-            e.printStackTrace();
-        }
-
-        CloseableHttpResponse response = null;
-
-        RestResponse rr = null;
-        try {
-            response = client.execute(request);
-            rr = new RestResponse(response);
-            client.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return rr;
-    }
-    public static RestResponse sendForm(String endpoint, MultiValueMap entity) {
+    public static RestResponse sendRest(String endpoint, MultiValueMap entity, String type) {
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-        headers.setBasicAuth("admin","geoserver");
-        HttpEntity<MultiValueMap<String, Object>> requestEntity
-                = new HttpEntity<>(entity, headers);
-
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<String> response = restTemplate
-                .postForEntity("http://geoservertester:8080/geoserver/rest/"+endpoint, requestEntity, String.class);
-
-        return new RestResponse(response.getStatusCodeValue(), response.getBody());
-    }
-
-    public static void sendPut(String endpoint, MultiValueMap entity) {
-        HttpHeaders headers = new HttpHeaders();
+        headers.setBasicAuth("admin", "geoserver");
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBasicAuth("admin","geoserver");
         HttpEntity<MultiValueMap<String, Object>> requestEntity
                 = new HttpEntity<>(entity, headers);
-
         RestTemplate restTemplate = new RestTemplate();
-        restTemplate.put("http://geoservertester:8080/geoserver/rest/"+endpoint, requestEntity);
 
-        //System.out.println(response.toString());
-    }
-
-    public static void sendPost2(String endpoint, MultiValueMap entity) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBasicAuth("admin","geoserver");
-        HttpEntity<MultiValueMap<String, Object>> requestEntity
-                = new HttpEntity<>(entity, headers);
-
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<String> response = restTemplate.postForEntity("http://geoservertester:8080/geoserver/rest/"+endpoint, requestEntity, String.class);
-
-        System.out.println(response.toString());
+        ResponseEntity<String> reqResponse;
+        RestResponse responseFormatted = null;
+        //endpoint = "http://geoservertester:8080/geoserver/rest/" + endpoint;
+        endpoint= "http://localhost:8600/geoserver/ows?service=WPS&version=1.0.0&request=GetCapabilities";
+        switch (type) {
+            case "GET":
+                responseFormatted = new RestResponse(restTemplate.getForEntity(endpoint, String.class));
+                System.out.println(responseFormatted);
+                break;
+            case "POST":
+                responseFormatted = new RestResponse(restTemplate.postForEntity(endpoint, requestEntity, String.class));
+                break;
+            case "PUT":
+                restTemplate.put(endpoint, requestEntity);
+                break;
+            case "DELETE":
+                restTemplate.delete(endpoint, requestEntity);
+            default:
+                //Form
+                headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+                requestEntity = new HttpEntity<>(entity, headers);
+                responseFormatted = new RestResponse(restTemplate.postForEntity(endpoint, requestEntity, String.class));
+                break;
+        }
+        return responseFormatted;
     }
 }

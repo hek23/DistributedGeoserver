@@ -1,5 +1,4 @@
 FROM gradle:alpine
-
 ADD  --chown=gradle:gradle ./DistributedGeoserverAPI/src /API/src
 ADD  --chown=gradle:gradle ./DistributedGeoserverAPI/build.gradle /API/build.gradle
 ADD  --chown=gradle:gradle ./DistributedGeoserverAPI/gradlew /API/gradlew
