@@ -10,8 +10,8 @@ script:
   - gradle build
 install: 
   - cd DistributedGeoserverAPI
-  - gradle install
-script:
-  - cd DistributedGeoserverAPI
   - gradle build
+#script:
+#  - cd DistributedGeoserverAPI
+#  - gradle build
 
