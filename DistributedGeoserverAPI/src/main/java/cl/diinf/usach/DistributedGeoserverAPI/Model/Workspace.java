@@ -4,6 +4,9 @@ import cl.diinf.usach.DistributedGeoserverAPI.Utilities.RestBridge;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,7 +21,7 @@ public class Workspace {
     }
 
     public Workspace (RestResponse entity){
-        JsonNode jn = entity.getResponseDeserialized().get("workspace");
+        JsonNode jn = entity.getResponse().get("workspace");
         this.name = jn.get("name").asText();
         this.dataStores = jn.get("dataStores").asText();
         this.coverageStores=jn.get("coverageStores").asText();
@@ -27,45 +30,37 @@ public class Workspace {
 
     public static List<Workspace> getAll(){
         //Se envía solicitud al servicio para obtención de Workspace, con RestBridge
-        List<String[]> headers = new ArrayList<String[]>();
-        headers.add(new String[]{"Content-type", "application/json"});
-        RestResponse response = RestBridge.sendGet("workspaces", headers);
+        RestResponse response = RestBridge.sendRest("workspaces", null, "GET");
         ObjectMapper mapper = new ObjectMapper();
         List<Workspace> workspaceList = new ArrayList<Workspace>();
-        response.getResponseDeserialized().get("workspaces").get("workspace").forEach(wspace -> workspaceList.add(new Workspace(wspace.get("name").asText())));
+        response.getResponse().get("workspaces").get("workspace").forEach(wspace -> workspaceList.add(new Workspace(wspace.get("name").asText())));
         return workspaceList;
     }
 
     public static int create(String name){
         //Se envía solicitud al servicio para obtención de Workspace, con RestBridge
-        List<String[]> headers = new ArrayList<String[]>();
-        headers.add(new String[]{"Content-type", "application/json"});
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode ob = mapper.createObjectNode();
-        ob.put("name", name);
-        ObjectNode node = mapper.createObjectNode();
-        node.set("workspace",ob);
-        RestResponse response = RestBridge.sendPost("workspaces",node, headers);
+
+
+        MultiValueMap<String, Object> ws = new LinkedMultiValueMap<>();
+        ws.add("name",name);
+        MultiValueMap<String, Object> wsBody = new LinkedMultiValueMap<>();
+        wsBody.add("workspace", ws);
+        RestResponse response = RestBridge.sendRest("workspaces",wsBody, "POST");
         System.out.println(response.getStatus());
         return response.getStatus();
     }
 
     public static Workspace getByName(String name){
         //Se envía solicitud al servicio para obtención de Workspace, con RestBridge
-        List<String[]> headers = new ArrayList<String[]>();
-        headers.add(new String[]{"Content-type", "application/json"});
-        RestResponse response = RestBridge.sendGet("/workspaces/"+name,headers);
+        RestResponse response = RestBridge.sendRest("/workspaces/"+name,null,"GET");
         return new Workspace(response);
     }
 
     public static int check (String name){
         //Se envía solicitud al servicio para obtención de Workspace, con RestBridge
-        List<String[]> headers = new ArrayList<String[]>();
-        headers.add(new String[]{"Content-type", "application/json"});
-        RestResponse response = RestBridge.sendGet("/workspaces/"+name,headers);
+        RestResponse response = RestBridge.sendRest("/workspaces/"+name,null, "GET");
         return response.getStatus();
     }
-
 
     public String getName() {
         return name;

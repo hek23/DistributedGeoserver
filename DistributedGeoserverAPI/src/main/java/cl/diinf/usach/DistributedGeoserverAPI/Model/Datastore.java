@@ -31,66 +31,39 @@ public class Datastore {
 
     public static int create(String name, String wname){
         //Se envía solicitud al servicio para obtención de Workspace, con RestBridge
+        ArrayList<Object> entry =  new ArrayList();
+        entry.add(generate("host", host));
+        entry.add(generate("port", port));
+        entry.add(generate("database", dbname));
+        entry.add(generate("user", user));
+        entry.add(generate("passwd", pass));
+        entry.add(generate("dbtype", "postgis"));
+        entry.add(generate("create database", true));
+        entry.add(generate("Batch insert size", 100));
         MultiValueMap<String, Object> dataStore = new LinkedMultiValueMap<>();
         dataStore.add("name",name);
+        dataStore.add("connectionParameters", entry);
+        MultiValueMap<String, Object> servObj = new LinkedMultiValueMap<>();
+        servObj.add("dataStore", dataStore);
 
-
-        ObjectNode connectionParameters = mapper.createObjectNode();
-        ArrayNode entry = mapper.createArrayNode();
-        //Create internal entry
-        ObjectNode keyBind = mapper.createObjectNode();
-        keyBind.put("@key","host");
-        keyBind.put("$", host);
-        //add to array
-        entry.add(keyBind);
-        //Do again
-        keyBind = mapper.createObjectNode();
-        keyBind.put("@key","port");
-        keyBind.put("$",port);
-        entry.add(keyBind);
-        keyBind = mapper.createObjectNode();
-        //Do again
-        keyBind.put("@key","database");
-        keyBind.put("$","geoserverDBTest");
-        entry.add(keyBind);
-        keyBind = mapper.createObjectNode();
-        //Do again
-        keyBind.put("@key","user");
-        keyBind.put("$",user);
-        entry.add(keyBind);
-        keyBind = mapper.createObjectNode();
-        //Do again
-        keyBind.put("@key","passwd");
-        keyBind.put("$",pass);
-        entry.add(keyBind);
-        keyBind = mapper.createObjectNode();
-        keyBind.put("@key","dbtype");
-        keyBind.put("$","postgis");
-
-        entry.add(keyBind);
-        keyBind = mapper.createObjectNode();
-        keyBind.put("@key","Batch insert size");
-        keyBind.put("$",100);
-        entry.add(keyBind);
-        keyBind = mapper.createObjectNode();
-        keyBind.put("@key","create database");
-        keyBind.put("$",true);
-        entry.add(keyBind);
-
-        System.out.println(entry);
-        connectionParameters.set("entry",entry);
-        dataStore.set("connectionParameters", connectionParameters);
-        ObjectNode ob = (ObjectNode) mapper.createObjectNode().set("dataStore", dataStore);
-
-        RestResponse response = RestBridge.sendPost("/workspaces/"+wname+"/datastores", ob, headers);
+        RestResponse response = RestBridge.sendRest("/workspaces/"+wname+"/datastores",servObj,"POST");
+        //RestResponse response = RestBridge.sendPost("/workspaces/"+wname+"/datastores", ob, headers);
         return response.getStatus();
     }
 
     public static int check (String name, String wsname){
         //Se envía solicitud al servicio para obtención de Workspace, con RestBridge
-        List<String[]> headers = new ArrayList<String[]>();
-        headers.add(new String[]{"Content-type", "application/json"});
-        RestResponse response = RestBridge.sendGet("/workspaces/"+wsname+"/datastores/"+name,headers);
+        //RestResponse response = RestBridge.sendGet("/workspaces/"+wsname+"/datastores/"+name,headers);
+        RestResponse response = RestBridge.sendRest("/workspaces/"+wsname+"/datastores/"+name, null, "GET");
         return response.getStatus();
     }
+
+    public static MultiValueMap generate(String key, Object value){
+        //{"@key":"host","$":"localhost"}
+        MultiValueMap<String, Object> data = new LinkedMultiValueMap<>();
+        data.add("@key", key);
+        data.add("$", value);
+        return data;
+    }
+
 }
