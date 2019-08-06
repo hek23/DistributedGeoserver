@@ -52,14 +52,11 @@ public class Datastore {
     }
 
     public static int check (String name, String wsname){
-        //Se envía solicitud al servicio para obtención de Workspace, con RestBridge
-        //RestResponse response = RestBridge.sendGet("/workspaces/"+wsname+"/datastores/"+name,headers);
         RestResponse response = RestBridge.sendRest("/workspaces/"+wsname+"/datastores/"+name, null, "GET");
         return response.getStatus();
     }
 
     public static MultiValueMap generate(String key, Object value){
-        //{"@key":"host","$":"localhost"}
         MultiValueMap<String, Object> data = new LinkedMultiValueMap<>();
         data.add("@key", key);
         data.add("$", value);

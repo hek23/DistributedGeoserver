@@ -43,13 +43,13 @@ services:
         interval: 1m30s
         timeout: 10s
         retries: 3
-   #javabridge:
-   #   container_name: 'distApi'
-   #   build: 
-   #      context: ./
-   #      dockerfile: javaApi.dockerfile
-   #   ports:
-   #      - "8800:8080"
+   javabridge:
+      container_name: 'distApi'
+      build: 
+         context: ./
+         dockerfile: javaApi.dockerfile
+      ports:
+         - "8800:8080"
 
 
 
