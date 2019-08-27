@@ -1,0 +1,12 @@
+version: '3.7'
+services:
+  worker:
+    image: 'democustom:f'
+    labels: ['com.citusdata.role=Worker']
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 35s
+      timeout: 5s
+      retries: 14
+      start_period: 120s
+  
