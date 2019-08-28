@@ -1,7 +1,10 @@
 version: '3.7'
 services:
   worker:
-    image: 'democustom:f'
+    #build: 
+    #  context: ./dockerImages
+    #  dockerfile: citusworker.dockerfile
+    image: 'democustom:w'
     labels: ['com.citusdata.role=Worker']
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]

@@ -34,9 +34,8 @@ RUN echo "shared_preload_libraries='citus, pg_stat_statements'" >> /usr/share/po
 RUN mkdir -p /docker-entrypoint-initdb.d
 
 # add scripts to run after initdb
-COPY 000-configure-stats.sh 001-create-citus-extension.sql /docker-entrypoint-initdb.d/
-#COPY 002-postgis.sh /docker-entrypoint-initdb.d/002-postgis.sh
-#COPY ./update-postgis.sh /usr/local/bin
+COPY ./scripts/000-configure-stats.sh ./scripts/001-create-citus-extension.sql /docker-entrypoint-initdb.d/
+
 # add health check script
-COPY pg_healthcheck /
+COPY ./scripts/pg_healthcheck /
 #COPY 003-wait.sh /

@@ -2,7 +2,10 @@ version: '3.7'
 services:
   master:
     #container_name: "${COMPOSE_PROJECT_NAME}_master"
-    image: 'democustom:f'
+    image: 'democustom:m'
+    #build: 
+    #  context: ./dockerImages
+    #  dockerfile: citusmaster.dockerfile
     ports: ["${MASTER_EXTERNAL_PORT:-5432}:5432"]
     labels: ['com.citusdata.role=Master']
     healthcheck:

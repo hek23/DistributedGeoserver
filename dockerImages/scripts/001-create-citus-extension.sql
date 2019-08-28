@@ -12,22 +12,7 @@ CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE EXTENSION IF NOT EXISTS postgis_topology;
 CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;
 CREATE EXTENSION IF NOT EXISTS postgis_tiger_geocoder;
-CREATE OR REPLACE FUNCTION insert_layer()
-RETURNS event_trigger
-AS $$
-    DECLARE r RECORD;
-    BEGIN
-            RAISE NOTICE 'event for % ', tg_tag;
-            -- I would like to execute this
-            r := pg_event_trigger_ddl_commands(); 
-            SELECT create_distributed_table(r.object_identity, 'id');
-    END;
-$$
-LANGUAGE plpgsql;
 
-CREATE EVENT TRIGGER insert_layer_event ON ddl_command_end
-WHEN TAG IN ('CREATE TABLE')
-EXECUTE PROCEDURE insert_layer();
 
 --CREATE EXTENSION IF NOT EXISTS citus;
 
