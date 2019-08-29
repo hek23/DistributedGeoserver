@@ -33,7 +33,6 @@ public class Workspace extends Element{
         RestResponse response = RestBridge.sendRest(endpoint, null, "GET");
         //revisar si se pudo hacer la solicitud
         if(response.getResponse() == null){
-            System.out.println("IF ENTER");
             return null;
         }
 
@@ -63,13 +62,15 @@ public class Workspace extends Element{
 
     @Override
     public int create(String name) {
-        //Revisar si viene de rest o de Workspace
+        //Revisar si viene de rest o de Datastore
         JsonObject param = new JsonObject();
         if(parser.parse(name).isJsonObject()) {
             //REST
             param = parser.parse(name).getAsJsonObject();
+            //
             if(param.has("workspace")){
                 param = param.get("workspace").getAsJsonObject();
+            //
                 if(param.has("name")){
                     if(param.get("name").getAsString()!=""){
                         return RestBridge.sendRest(endpoint, param, "POST").getStatus();
@@ -96,32 +97,6 @@ public class Workspace extends Element{
 
     }
 
-    /*public int create(String name){
-        //Se envía solicitud al servicio para obtención de Workspace, con RestBridge
-
-        MultiValueMap<String, Object> ws = new LinkedMultiValueMap<>();
-        ws.add("name",name);
-        MultiValueMap<String, Object> wsBody = new LinkedMultiValueMap<>();
-        wsBody.add("workspace", ws);
-        System.out.println(wsBody);
-        System.out.println(ws);
-        System.out.println(name);
-        RestResponse response = RestBridge.sendRest("workspaces",wsBody, "POST");
-        System.out.println(response.getStatus());
-        return response.getStatus();
-    }
-
-    public static Workspace getByName(String name){
-        //Se envía solicitud al servicio para obtención de Workspace, con RestBridge
-        RestResponse response = RestBridge.sendRest("/workspaces/"+name,null,"GET");
-        return new Workspace(response);
-    }
-
-    public static int check (String name){
-        //Se envía solicitud al servicio para obtención de Workspace, con RestBridge
-        RestResponse response = RestBridge.sendRest("/workspaces/"+name,null, "GET");
-        return response.getStatus();
-    }*/
 
     public String getName() {
         return name;
