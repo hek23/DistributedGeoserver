@@ -5,6 +5,21 @@ services:
       image: adminer
       ports:
          - "9000:8080"
+
+   db:
+      image: kartoza/postgis:11.0-2.5
+      container_name: 'mainPostgres'
+      ports:
+         - "25434:5432"
+      env_file:
+         - docker-env/db.env
+      restart: on-failure
+      healthcheck:
+        test: "exit 0"
+      #volumes:
+      #   - ./volumes/GeoDbData:/var/lib/postgresql/data   
+      
+
    geoserver:
       container_name: 'geoservertester'
       build: 
@@ -24,8 +39,8 @@ services:
       restart: on-failure
       env_file:
         - docker-env/geoserver.env
-      #depends_on:
-      #  - db
+      depends_on:
+        - db
       healthcheck:
         test: curl --fail -s http://localhost:8080/ || exit 1
         interval: 1m30s
