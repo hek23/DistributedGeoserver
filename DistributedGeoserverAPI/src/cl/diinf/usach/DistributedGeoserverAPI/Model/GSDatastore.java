@@ -1,34 +1,33 @@
 package cl.diinf.usach.DistributedGeoserverAPI.Model;
 
 import cl.diinf.usach.DistributedGeoserverAPI.Utilities.RestBridge;
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
-import static cl.diinf.usach.DistributedGeoserverAPI.Utilities.JsonUtil.toJson;
 
 //@ConfigurationProperties(prefix = "db")
-public class Datastore implements Dao{
+public class GSDatastore implements Dao{
     static JsonParser parser = new JsonParser();
     String name;
     static String host = "localhost";
     static String port = "25434";
-    static String dbname = "postgres";
+    static String dbname = "gis";
     static String user = "docker";
     static String pass = "docker";
+    private transient String endpoint = "datastores";
 
-    public Datastore (String name){
+    public GSDatastore(){
+
+    }
+    public GSDatastore(String name){
         this.name = name;
     }
 
-    public static int check (String name, String wsname){
+
+
+    public int check (String name, String wsname){
         RestResponse response = RestBridge.sendRest("/workspaces/"+wsname+"/datastores/"+name, null, "GET");
         return response.getStatus();
     }
@@ -64,15 +63,17 @@ public class Datastore implements Dao{
         JsonObject param = parser.parse(body).getAsJsonObject();
         //revisar si tiene los nombres
         if (param.has("workspace")) {
-            if (param.get("workspace").getAsString() != "") {
+            if (!param.get("workspace").getAsString().isEmpty()) {
                 if (param.has("datastore")) {
-                    if (param.get("datastore").getAsString() != "") {
+                    if (!param.get("datastore").getAsString().isEmpty()) {
                         //crear objeto para crear Datastore
                         //Verificar si esta el workspace
-                        if (RestBridge.sendRest("workspaces", null, "GET").getStatus() != 200) {
-                            //Workspace noexiste
+                        //if (RestBridge.sendRest("workspaces", null, "GET").getStatus() != 200) {
+                        if(true){
+                            // Workspace noexiste
                             //Crear Workspace
-                            if(new Workspace().create(param.get("workspace").getAsString()) !=201){
+                            if(new GSWorkspace().create(param.get("workspace").getAsString()) !=201){
+                                System.out.println("DAFUQ");
                                 //No pudo crearse
                                 return 400;
                             }
@@ -114,5 +115,10 @@ public class Datastore implements Dao{
     @Override
     public void delete(Object o) {
 
+    }
+    @Override
+    public int exists(String names) {
+        String[] name = names.split(":");
+        return RestBridge.sendRest("workspaces/"+name[0]+"/datastores/"+name[1], null, "GET").getStatus();
     }
 }

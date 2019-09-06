@@ -4,31 +4,30 @@ import cl.diinf.usach.DistributedGeoserverAPI.Utilities.RestBridge;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import org.apache.http.entity.StringEntity;
 
+import javax.json.Json;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
-public class Workspace extends Element{
+public class GSWorkspace extends Element{
     static JsonParser parser = new JsonParser();
     private String name;
     private String dataStores;
     private String coverageStores;
     private String wmsStores;
-    private String endpoint = "workspaces";
+    private transient String endpoint = "workspaces";
 
-    public Workspace(){
+    public GSWorkspace(){
 
     }
-    public Workspace (String name){
+    public GSWorkspace(String name){
         this.name = name;
     }
 
     @Override
-    public List<Workspace> getAll(){
+    public List<GSWorkspace> getAll(){
         JsonElement wsObject;
-        List<Workspace> workspaceList;
+        List<GSWorkspace> GSWorkspaceList;
         //Se envía solicitud al servicio para obtención de Workspace, con RestBridge
         RestResponse response = RestBridge.sendRest(endpoint, null, "GET");
         //revisar si se pudo hacer la solicitud
@@ -40,19 +39,22 @@ public class Workspace extends Element{
         if(response.getResponse().has("workspaces")) {
             //Respuesta ok!. Ahora recorrer cada fase
             wsObject = response.getResponse().get("workspaces");
-            if(!wsObject.getAsString().isEmpty()){
+            System.out.println("WS " + wsObject.toString());
+            if(wsObject.isJsonObject()){
                 if (wsObject.getAsJsonObject().has("workspace")) {
                     wsObject = wsObject.getAsJsonObject().get("workspace");
                     if (wsObject.isJsonArray()) {
-                        workspaceList = new ArrayList<Workspace>();
-                        wsObject.getAsJsonArray().forEach(wspace -> workspaceList.add(new Workspace(wspace.getAsString())));
-                        return workspaceList;
+                        GSWorkspaceList = new ArrayList<GSWorkspace>();
+                        wsObject.getAsJsonArray().forEach(wspace ->{
+                                GSWorkspaceList.add(new GSWorkspace(wspace.getAsJsonObject().get("name").getAsString()));
+                        });
+                        return GSWorkspaceList;
                     }
                 }
             }
             else{
-                workspaceList = new ArrayList<Workspace>();
-                return workspaceList;
+                GSWorkspaceList = new ArrayList<GSWorkspace>();
+                return GSWorkspaceList;
             }
 
         }
@@ -68,11 +70,13 @@ public class Workspace extends Element{
             //REST
             param = parser.parse(name).getAsJsonObject();
             //
+            System.out.println("param " + param);
             if(param.has("workspace")){
-                param = param.get("workspace").getAsJsonObject();
+                //param = param.get("workspace").getAsJsonObject();
             //
-                if(param.has("name")){
-                    if(param.get("name").getAsString()!=""){
+                if(param.get("workspace").getAsJsonObject().has("name")){
+                    if(param.get("workspace").getAsJsonObject().get("name").getAsString()!=""){
+                        System.out.println(param);
                         return RestBridge.sendRest(endpoint, param, "POST").getStatus();
                     }
                 }
@@ -81,7 +85,12 @@ public class Workspace extends Element{
         }
         else{
             //WS
+
+            JsonObject ws = new JsonObject();
             param.addProperty("name",name);
+            ws.add("workspace", param);
+            System.out.println("CREATE WS FROM DS");
+            System.out.println(param);
         }
         return RestBridge.sendRest(endpoint, param, "POST").getStatus();
     }
@@ -95,6 +104,11 @@ public class Workspace extends Element{
     @Override
     public void delete(Object o) {
 
+    }
+
+    @Override
+    public int exists(String name) {
+        return RestBridge.sendRest(endpoint+"/"+name, null, "GET").getStatus();
     }
 
 

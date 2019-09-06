@@ -80,6 +80,7 @@ public final class RestBridge {
             return new RestResponse();
 
         }
+        System.out.println(response.getEntity());
         return new RestResponse(response);
     }
 }

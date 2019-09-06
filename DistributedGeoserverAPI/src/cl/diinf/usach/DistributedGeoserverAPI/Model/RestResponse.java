@@ -25,15 +25,19 @@ public class RestResponse {
     }
     public RestResponse(HttpResponse _response){
         this.status = _response.getStatusLine().getStatusCode();
+        JsonParser parser = new JsonParser();
+        String body = "";
         try {
-            JsonParser parser = new JsonParser();
-            String body = EntityUtils.toString(_response.getEntity());
-            System.out.println("BODY " + body);
-            System.out.println("TYPE " + parser.parse(body).toString());
+            body = EntityUtils.toString(_response.getEntity());
             this.response = parser.parse(body).getAsJsonObject();
 
         } catch (IOException e) {
             e.printStackTrace();
+        }
+        catch (java.lang.IllegalStateException j){
+            //Respuesta de Geoserver. Solo importa el status
+            this.response = new JsonObject();
+            response.addProperty("result", parser.parse(body).getAsString());
         }
     }
 

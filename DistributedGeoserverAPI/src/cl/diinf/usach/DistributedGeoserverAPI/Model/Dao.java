@@ -17,5 +17,5 @@ public interface Dao<T> {
 
     void delete(T t);
 
-    //T getByName(String name);
+    int exists (String name);
 }

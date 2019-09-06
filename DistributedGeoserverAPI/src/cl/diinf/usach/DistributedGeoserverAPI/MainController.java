@@ -1,10 +1,18 @@
 package cl.diinf.usach.DistributedGeoserverAPI;
 
+import cl.diinf.usach.DistributedGeoserverAPI.Model.GSDatastore;
 import cl.diinf.usach.DistributedGeoserverAPI.Model.RestResponse;
-import cl.diinf.usach.DistributedGeoserverAPI.Model.Workspace;
+import cl.diinf.usach.DistributedGeoserverAPI.Model.GSWorkspace;
+import cl.diinf.usach.DistributedGeoserverAPI.Model.Shapefile;
+import com.google.gson.JsonObject;
+import org.apache.commons.io.FileUtils;
 
+import javax.servlet.MultipartConfigElement;
+import java.io.File;
+import java.io.InputStream;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 
 import static spark.Spark.*;
 import static cl.diinf.usach.DistributedGeoserverAPI.Utilities.JsonUtil.*;
@@ -12,11 +20,8 @@ import static cl.diinf.usach.DistributedGeoserverAPI.Utilities.JsonUtil.*;
 public class MainController {
 
     public MainController(){
-        Workspace workspace = new Workspace();
-
-
-        //logger.writeLog("RecommenderController - Starting Service");
-        //core.setLogger(logger);
+        GSWorkspace gsWorkspace = new GSWorkspace();
+        GSDatastore gsDatastore = new GSDatastore();
 
         // Port Definition
         port(8080);
@@ -38,9 +43,10 @@ public class MainController {
         before((request, response) -> response.header("Access-Control-Allow-Origin", "*"));
 
         path("/workspaces", () -> {
+
             get("/", (req, res) -> {
                 System.out.println("[GET] Req: " + req.toString() + ", Res: " + res.toString());
-                List<Workspace> lw = workspace.getAll();
+                List<GSWorkspace> lw = gsWorkspace.getAll();
                 if(lw == null){
                     res.body(toJson(new RestResponse(503, "Geoserver doesn't answer or is down")));
                     res.status(503);
@@ -54,7 +60,7 @@ public class MainController {
 
             post("/", (req, res) -> {
                 System.out.println("[POST] Req: " + req.toString() + ", Res: " + res.toString());
-                int status = workspace.create(req.body());
+                int status = gsWorkspace.create(req.body());
                 String message = "";
                 switch (status) {
                     case 201: {
@@ -80,32 +86,18 @@ public class MainController {
 
             get("/:wsName", (req, res)->{
                 System.out.println("[GET] Req: " + req.toString() + ", Res: " + res.toString());
-                return "OK";
+                return gsWorkspace.exists(req.params(":wsName")) == 200;
             });
         });
 
         path("/datastores", () -> {
-            get("/", (req, res) -> {
-                System.out.println("[GET] Req: " + req.toString() + ", Res: " + res.toString());
-                List<Workspace> lw = workspace.getAll();
-                if(lw == null){
-                    res.body(toJson(new RestResponse(503, "Geoserver doesn't answer or is down")));
-                    res.status(503);
-                }
-                else{
-                    res.body(toJson(lw));
-                    res.status(200);
-                }
-                return res;
-            });
-
             post("/", (req, res) -> {
                 System.out.println("[POST] Req: " + req.toString() + ", Res: " + res.toString());
-                int status = workspace.create(req.body());
+                int status = gsDatastore.create(req.body());
                 String message = "";
                 switch (status) {
                     case 201: {
-                        message = "Workspace Created";
+                        message = "Datastore Created";
                         break;
                     }
                     case 400: {
@@ -113,7 +105,7 @@ public class MainController {
                         break;
                     }
                     case 401:{
-                        message = "Workspace Already Exists";
+                        message = "Datastore Already Exists";
                         break;
                     }
                     default:{
@@ -124,15 +116,55 @@ public class MainController {
                 res.body(toJson(new RestResponse(status, message)));
                 return res;
             });
+        });
 
-            get("/:wsName", (req, res)->{
-                System.out.println("[GET] Req: " + req.toString() + ", Res: " + res.toString());
-                return "OK";
+        path("/geoprocessing", ()-> {
+            post("/upload", (request, response) -> {
+                request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
+                JsonObject body = fromJson(request.body());
+                File file = null;
+                String schema = "";
+                try (InputStream is = request.raw().getPart("file").getInputStream()) {
+                    // Use the input stream to create a file
+                    file = new File("./tmp/" + body.get("workspace").getAsString() + body.get("datastore").getAsString() + String.valueOf(System.currentTimeMillis()));
+                    schema = request.raw().getPart("file").getSubmittedFileName();
+                    // commons-io
+                    FileUtils.copyInputStreamToFile(is, file);
+                }
+
+                byte state = Shapefile.saveSHP(file,schema);
+                Map<String, String> result = new HashMap<String, String>();
+                switch (state){
+                    case -2:
+                        result.put("State", "File or Schema are empty");
+                        response.status(400);
+                        break;
+                    case -1:
+                        result.put("State", "An unexpected error occured");
+                        response.status(500);
+                        break;
+                    case 0:
+                        result.put("State", "Layer already exists");
+                        response.status(409);
+                        break;
+                    case 1:
+                        result.put("State", "Layer uploaded succesfully");
+                        response.status(201);
+                        break;
+                    default:
+                        result.put("State", "Error");
+                        response.status(500);
+                }
+                if (response.status()==201){
+                    //publish on geoserver
+
+                }
+                response.body(toJson(result));
+                return response;
             });
         });
 
-        path("/geoprocessing", ()->
-        {});
+
 
 
 
