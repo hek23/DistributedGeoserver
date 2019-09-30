@@ -1,10 +1,9 @@
-dist: bionic
-language: java
-jdk: openjdk11
-install: 
-  - cd DistributedGeoserverAPI
-  - gradle build
-#script:
-#  - cd DistributedGeoserverAPI
-#  - gradle build
-
+language: python
+python:
+  - "3.6"      # current default Python on Travis CI
+# command to install dependencies
+install:
+  - pip install -r requirements.txt
+# command to run tests
+script:
+  - pytest
