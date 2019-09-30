@@ -9,6 +9,9 @@ def getWKTQuery(geojsonObject, radius=0):
       "type": "MultiLineString"
    }
 
+   if(geojsonObject == {} ):
+      return "the_geom"
+
    if (geojsonObject['type'].lower() == "circle"):
       geojsonObject['type'] = "Point"
       geojsonObject['coordinates'][0] = [geojsonObject['coordinates'][0][0]]
