@@ -27,9 +27,9 @@ def initimport(dsName, wsName):
     }
 
     # Init import
-    response = requests.post(app.config.get("GEOSERVER")+"/rest/imports",
+    response = requests.post(current_app.config.get("GEOSERVER")+"/rest/imports",
                          data=json.dumps(importer),
-                         headers={'Content-Type': 'application/json'}, auth=HTTPBasicAuth(app.config.get("GEOSERVERUSR"), app.config.get("GEOSERVERPWD")))
+                         headers={'Content-Type': 'application/json'}, auth=HTTPBasicAuth(current_app.config.get("GEOSERVERUSR"), current_app.config.get("GEOSERVERPWD")))
 
     if(response.status_code==201):
         return response.json()['import']['id']
@@ -38,8 +38,8 @@ def initimport(dsName, wsName):
 
 
 def activateImport(id):
-    response = requests.post(app.config.get("GEOSERVER")+"/rest/imports/"+str(id)+"/?async=true",
-                         headers={'Content-Type': 'application/json'}, auth=HTTPBasicAuth(app.config.get("GEOSERVERUSR"), app.config.get("GEOSERVERPWD")))
+    response = requests.post(current_app.config.get("GEOSERVER")+"/rest/imports/"+str(id)+"/?async=true",
+                         headers={'Content-Type': 'application/json'}, auth=HTTPBasicAuth(current_app.config.get("GEOSERVERUSR"), current_app.config.get("GEOSERVERPWD")))
     print(response.text)
     return
 
@@ -50,7 +50,7 @@ def defineDsType(id):
         "name":"postgis"
       }
     }
-    r = requests.put(app.config.get("GEOSERVER")+"/rest/imports/"+str(id)+"/tasks/0/target", data=json.dumps(reset), auth=HTTPBasicAuth(app.config.get("GEOSERVERUSR"), app.config.get("GEOSERVERPWD")))
+    r = requests.put(current_app.config.get("GEOSERVER")+"/rest/imports/"+str(id)+"/tasks/0/target", data=json.dumps(reset), auth=HTTPBasicAuth(current_app.config.get("GEOSERVERUSR"), current_app.config.get("GEOSERVERPWD")))
 
     activateImport(id)
 
@@ -69,7 +69,7 @@ def importSHP(dsName, wsName, file):
     else:
         file = convertFile(file)
         files = {'file': file}
-        r = requests.post(app.config.get("GEOSERVER")+"/rest/imports/"+str(id)+"/tasks", files=files, auth=HTTPBasicAuth(app.config.get("GEOSERVERUSR"), app.config.get("GEOSERVERPWD")))
+        r = requests.post(current_app.config.get("GEOSERVER")+"/rest/imports/"+str(id)+"/tasks", files=files, auth=HTTPBasicAuth(current_app.config.get("GEOSERVERUSR"), current_app.config.get("GEOSERVERPWD")))
 
         file.close()
         os.remove((secure_filename(file.name)))
