@@ -51,3 +51,6 @@ services:
 #         - "8800:8080"
 
 
+
+volumes:
+   geoserverdata:
