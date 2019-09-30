@@ -70,14 +70,14 @@ def intersection():
     #Could be ST_WITHIN(the_geom::geometry, {1}::geometry)
 
     # Generate queries
-    attributes_layer = columns_names.format(layersName[0])
+    attributes_layer = columns_names.format(layersName[0].split(".")[1])
     # get new cursor
     cursor = psqlConnector.getCursor()
     # Get attibutes
     cursor.execute(attributes_layer)
-    attributes_layer = cursor.fetchall()
+    information_layer = cursor.fetchall()
     layer = ""
-    for attr in attributes_layer:
+    for attr in information_layer:
         layer = layer + attr[0] + ", "
 
     intersection = intersection.format(layersName[0], getWKTQuery(request.json['geometry'], request.json['radius']), layer)
@@ -94,7 +94,12 @@ def intersection():
     attributes = []
     for row in result:
         polygons.append(json.loads(row[-1])) # polygon
-        attributes.append(list(row[0:len(row)-1]))# attr
+        #print(row[attri])
+        attr = {}
+        for attri in range(len(information_layer)):
+            print(row[attri])
+            attr.update({information_layer[attri][0]: row[attri]})# attr
+        attributes.append(attr)
     # {"polygons":[], "attributes":[]}
     if(len(result)==0): #No response
         return jsonify({"error":"No data suitable to query"}), 404
