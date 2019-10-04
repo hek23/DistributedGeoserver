@@ -24,7 +24,7 @@ def getWKTQuery(geojsonObject, radius=0):
    # Feed to shape() to convert to shapely.geometry.polygon.Polygon
    # This will invoke its __geo_interface__ (https://gist.github.com/sgillies/2217756)
    g2 = shape(g1)
-   figure = "ST_GeomFromText('"+g2.wkt + "',ST_SRID(the_geom))"
+   figure = "ST_Transform(ST_GeomFromText('"+g2.wkt + "',3857), ST_SRID(the_geom))"
    # Now check if radius is on there
    if (radius != 0):
       #As radius is not 0, means that is a circle

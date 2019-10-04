@@ -58,7 +58,7 @@ def intersection():
     #intersection = "(SELECT {2} ST_AsGeojson(ST_Transform(ST_Intersection(the_geom::geometry, {1}::geometry)," \
     #               "4326)) FROM {0} where ST_Intersects(the_geom::geometry, {1}::geometry))"
 
-    intersection = "(SELECT {2} ST_AsGeojson(ST_Intersection(the_geom::geometry, {1}::geometry))" \
+    intersection = "(SELECT {2} ST_AsGeojson(ST_Transform(ST_Intersection(the_geom::geometry, {1}::geometry),3857))" \
                    "FROM {0} where ST_Intersects(the_geom::geometry, {1}::geometry))"
 
     #Could be ST_WITHIN(the_geom::geometry, {1}::geometry)
