@@ -177,7 +177,9 @@ def merge(polygonResultList):
     #print(pivot)
     #shp = {"polygons":[], "attributes":[]}
     #shp['polygons'][0] = {"type":"", "coordinates":[]}
-    results = []
+    #results = []
+    attributes = []
+    polygons = []
     for shp in polygonResultList:
         #Each polygon in each shape
         #for polygon in shp['polygons']:
@@ -190,9 +192,11 @@ def merge(polygonResultList):
                 if(not(result.is_empty)):
                     piv_idx = pivot['polygons'].index(pivot_polygon)
                     shp_idx = shp['polygons'].index(polygon)
-                    results.append({'attributes': {**pivot['attributes'][piv_idx], **shp['attributes'][shp_idx]} , 'polygons':mapping(result)})
-    return results
-               
+                    #results.append({'attributes': {**pivot['attributes'][piv_idx], **shp['attributes'][shp_idx]} , 'polygons':mapping(result)})
+                    attributes.append({**pivot['attributes'][piv_idx], **shp['attributes'][shp_idx]})
+                    polygons.append(mapping(result))
+    #return results
+    return {"attributes": attributes, "polygons": polygons}          
         
 
 #@current_app.route('/geoprocessing/')
