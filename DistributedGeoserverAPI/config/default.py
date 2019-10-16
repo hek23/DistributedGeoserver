@@ -7,4 +7,5 @@ GEOSERVER = "http://localhost:8600/geoserver"
 GEOSERVERUSR = "admin"
 GEOSERVERPWD = "geoserver"
 PORT = 5000
+THREADS = 2
 CONN_STRING = "dbname='{}' user='{}' password='{}' host='{}' port='{}'".format(DBNAME, DBUSER, DBPWD, DBHOST, DBPORT)

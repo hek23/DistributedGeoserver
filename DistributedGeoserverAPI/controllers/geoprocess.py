@@ -8,16 +8,13 @@ from datetime import datetime
 
 from shapely.geometry import shape
 from shapely.ops import triangulate
+from shapely.geometry import mapping
 
 from helpers import psqlConnector
-from helpers.geoformsGenerator import getWKTQuery
+from helpers.geoformsGenerator import getWKTQuery, getPolygon
+from copy import deepcopy
 
-
-def prepareArea(geometry):
-    s = json.dumps(geometry)
-    g1 = geojson.loads(s)
-    g2 = shape(g1)
-    areas = triangulate(g2)
+THREADS = current_app.config.get("THREADS")
 
 #{layers: [], geometry: GEOJSON (geometry part), radius: OPTIONAL float, bufferRadius: float}
 
@@ -53,30 +50,62 @@ def intersection():
     layersName = request.json['layers']
     if len(layersName)<1:
         return "Need Layers"
-
-    columns_names = "SELECT c.column_name as cName FROM information_schema.columns as c WHERE table_name = '{0}' and column_name != 'the_geom' and column_name != 'fid';"
-    #intersection = "(SELECT {2} ST_AsGeojson(ST_Transform(ST_Intersection(the_geom::geometry, {1}::geometry)," \
-    #               "4326)) FROM {0} where ST_Intersects(the_geom::geometry, {1}::geometry))"
-
-    intersection = "(SELECT {2} ST_AsGeojson(ST_Transform(ST_Intersection(the_geom::geometry, {1}::geometry),3857))" \
-                   "FROM {0} where ST_Intersects(the_geom::geometry, {1}::geometry))"
-
     #Could be ST_WITHIN(the_geom::geometry, {1}::geometry)
 
     ####################### MULTIPLE LAYERS
-    #
-    #cols = [columns_names.format(shape_name.split[1]) for shape_name in layersName]
+    #Attributes must be layername.attr
 
+    #MultiIntersection. Must be (A inter B inter C), etc. A is polygon
+
+
+    polygon = getWKTQuery(request.json['geometry'], request.json['radius'])
+
+    ## OPTION 1: LAYER BY PROCESS (Each exec goes to one thread). Threads are defined by layers number
+    polygons = []
+    attributes = []
+
+    #MULTITHREAD START
+    processedLayers = [threadCall(layer, polygon) for layer in layersName]
+
+    shapeFinal = merge(processedLayers)    
+    return jsonify(shapeFinal)
+
+ 
+
+    #MULTITHREAD END
+
+
+    ## OPTION 2: POLYGON DISTRIBUTED
     
+
+    #if(len(shapeFinal[])==0): #No response
+    #    print(shapeFinal)
+    #    return jsonify({"error":"No data suitable to query"}), 404
+    #else:
+    #    #return jsonify({"polygons": polygons, "attributes": attributes}), 200
+    #    return jsonify(result),200    
+
 
 
 
     ##########################################
 
-
-
+def intersectionLayer(layerName, polygon):
     # Generate queries
-    attributes_layer = columns_names.format(layersName[0].split(".")[1])
+
+    columns_names = "SELECT c.column_name as cName FROM information_schema.columns as c WHERE table_name = '{0}' and column_name != 'the_geom' and column_name != 'fid';"
+    #intersection = "(SELECT {2} ST_AsGeojson(ST_Transform(ST_Intersection(the_geom::geometry, {1}::geometry)," \
+    #               "4326)) FROM {0} where ST_Intersects(the_geom::geometry, {1}::geometry))"
+
+
+    tableName = layerName.split(".")[-1]
+    if(tableName[0].isupper()):
+        layerName = layerName.replace(tableName , "\"" + tableName + "\"")
+        tableName = "\"" + tableName + "\""
+    attributes_layer = columns_names.format(tableName)
+    print(layerName)
+    
+    
     # get new cursor
     cursor = psqlConnector.getCursor()
     # Get attibutes
@@ -85,11 +114,18 @@ def intersection():
     information_layer = cursor.fetchall()
     layer = ""
     for attr in information_layer:
-        layer = layer + attr[0] + ", "
+        if attr[0][0].isupper():
+            layer = layer + "\"" + attr[0] + "\", "
+        else:
+            layer = layer + attr[0] + ", "
 
-    intersection = intersection.format(layersName[0], getWKTQuery(request.json['geometry'], request.json['radius']), layer)
-    print(intersection)
-    cursor.execute(intersection)
+    intersection = "(SELECT {2} ST_AsGeojson(ST_Intersection(ST_Transform(the_geom,3857), {1}))" \
+                   "FROM {0} where ST_Intersects(ST_Transform(the_geom,3857), {1}))"
+
+    #intersection = "(SELECT {2} ST_AsGeojson(ST_Transform(ST_Intersection(the_geom::geometry, {1}::geometry),3857))" \
+    #               "FROM {0} where ST_Intersects(the_geom::geometry, {1}::geometry))"
+
+    cursor.execute(intersection.format(layerName, polygon, layer))
     #Result will be saved as a new layer, also returned as geom WKT
     #First, save new layer
     #fig = "CREATE TABLE {0}_{1} AS ".format(layersName[0],datetime.now().strftime("%d_%m_%Y_%H_%M_%S")) + intersection
@@ -97,19 +133,66 @@ def intersection():
     result = cursor.fetchall()
     #psqlConnector.get_db().commit()
     cursor.close()
-    polygons = []
+    return information_layer, result
+
+#Polygon in a geoJSON
+def dividePolygon(polygon, radius=0):
+    minx, miny, maxx, maxy = polygon.bounds
+    #remainder goes to last div. Division left to right
+    intervalx = (maxx - minx)/THREADS
+    intervaly = (maxy - miny)/THREADS
+    lines = []
+    for i in range(THREADS):
+        line = LineString([(minx + i*intervalx, miny), (minx + i*intervalx, maxy)])
+        lines.append(line)
+    lines.append(getPolygon().boundary)
+    merged = linemerge(lines)
+    borders = unary_union(merged)
+    polygons = polygonize(borders)
+    return list(polygons)
+
+def threadCall(layer, polygon):
     attributes = []
+    polygons = []
+    information_layer, result = intersectionLayer(layer, polygon)
+    layer = layer.split(".")[-1]
     for row in result:
         polygons.append(json.loads(row[-1])) # polygon
         attr = {}
         for attri in range(len(information_layer)):
-            print(row[attri])
-            attr.update({information_layer[attri][0]: row[attri]})# attr
+            attr.update({layer +"." +information_layer[attri][0]: row[attri]})# attr
         attributes.append(attr)
-    if(len(result)==0): #No response
-        return jsonify({"error":"No data suitable to query"}), 404
-    else:
-        return jsonify({"polygons": polygons, "attributes": attributes}), 200
+    return {"polygons": polygons, "attributes": attributes}
 
+def merge(polygonResultList):
+    #Keep intersected polygon, but need intersect and transform from dict to objects
+    #Shapes is List of Objects, which contains Polygons and attributes (lists)
+
+    #shapes = [[shape(polygon) for polygon in results['polygons']] for results in polygonResultList]
+    
+    #Select shapes[0] as pivot (first to compare) //polygonResultList
+
+    pivot = polygonResultList.pop(0) #  OBJECT!!!!!!
+    #print(shape(pivot['polygons'][0]))
+    #print(pivot)
+    #shp = {"polygons":[], "attributes":[]}
+    #shp['polygons'][0] = {"type":"", "coordinates":[]}
+    results = []
+    for shp in polygonResultList:
+        #Each polygon in each shape
+        #for polygon in shp['polygons']:
+        for polygon in shp['polygons']:
+            #Each polygon in pivot
+            for pivot_polygon in pivot['polygons']:
+                r1 = shape(polygon)
+                r2 = shape(pivot_polygon)
+                result = r1.intersection(r2)
+                if(not(result.is_empty)):
+                    piv_idx = pivot['polygons'].index(pivot_polygon)
+                    shp_idx = shp['polygons'].index(polygon)
+                    results.append({'attributes': {**pivot['attributes'][piv_idx], **shp['attributes'][shp_idx]} , 'polygons':mapping(result)})
+    return results
+               
+        
 
 #@current_app.route('/geoprocessing/')
