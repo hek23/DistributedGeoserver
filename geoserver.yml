@@ -1,11 +1,6 @@
 version: '3.7'
 
 services:
-   #dbtester:
-   #   image: adminer
-   #   ports:
-   #      - "9000:8080"
-
    db:
       image: kartoza/postgis:11.0-2.5
       container_name: 'mainPostgres'
@@ -19,7 +14,6 @@ services:
       #volumes:
       #   - ./volumes/GeoDbData:/var/lib/postgresql/data   
       
-
    geoserver:
       container_name: 'geoservertester'
       build: 
@@ -42,14 +36,14 @@ services:
         interval: 1m30s
         timeout: 10s
         retries: 3
-   #api:
-   #   build:
-   #      context: ./DistributedGeoserverAPI
-   #      dockerfile: pythonApi.dockerfile
-   #   ports:
-   #     - "8000:5000"
-   #   depends_on:
-   #     - db
+   api:
+      build:
+         context: ./DistributedGeoserverAPI
+         dockerfile: pythonApi.dockerfile
+      ports:
+        - "8000:5000"
+      environment:
+         WAIT_HOSTS: mainPostgres:5432
       
 
 volumes:

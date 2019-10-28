@@ -1,0 +1,4 @@
+.git
+!*.py
+!patch.txt
+!requirements.txt

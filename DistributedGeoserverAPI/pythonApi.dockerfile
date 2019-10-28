@@ -15,8 +15,10 @@ geos
 #RUN awk FNR-1 /sbin/ldconfig > asd
 #RUN cat patch.txt asd > /sbin/ldconfig
 #RUN cat /sbin/ldconfig  
-COPY requirements.txt ./
-COPY *.py ./
+#COPY requirements.txt ./
+COPY . ./
 RUN pip install --no-cache-dir -r requirements.txt
+ADD https://github.com/ufoscout/docker-compose-wait/releases/download/2.2.1/wait /wait
+RUN chmod +x /wait
 
-CMD [ "python", "./start" ]
+CMD /wait && python ./start.py
