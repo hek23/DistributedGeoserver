@@ -1,11 +1,11 @@
 import geojson
 from flask import Flask, request, current_app, g
 from flask import jsonify
-
+import time
 import json
 import os
 from datetime import datetime
-
+import concurrent
 from shapely.geometry import shape
 from shapely.ops import triangulate
 from shapely.geometry import mapping
@@ -13,6 +13,8 @@ from shapely.geometry import mapping
 from helpers import psqlConnector
 from helpers.geoformsGenerator import getWKTQuery, getPolygon
 from copy import deepcopy
+from concurrent.futures import ThreadPoolExecutor, wait
+from root_register import app
 
 THREADS = current_app.config.get("THREADS")
 
@@ -65,12 +67,26 @@ def intersection():
     attributes = []
 
     #MULTITHREAD START
-    processedLayers = [threadCall(layer, polygon) for layer in layersName]
+    start = time.time()
 
-    shapeFinal = merge(processedLayers)    
+    executor = ThreadPoolExecutor(max_workers=THREADS)
+    print("THREADING!")
+    processedLayers = []
+    #Use minor number between Threads or Layersqty
+    for layer in layersName:
+        processedResult = executor.submit(threadCall, layer,polygon)
+        processedLayers.append(processedResult)
+    result = [res.result() for res in wait(processedLayers).done]
+
+
+    end = time.time()
+    print(end-start)
+    shapeFinal = merge(result)
+    #print(wait(processedLayers))
+    #shapeFinal = "ok"
+    end = time.time()
+    print("TIME ELAPSED " +str(end - start))
     return jsonify(shapeFinal)
-
- 
 
     #MULTITHREAD END
 
@@ -105,34 +121,34 @@ def intersectionLayer(layerName, polygon):
     attributes_layer = columns_names.format(tableName)
     print(layerName)
     
-    
-    # get new cursor
-    cursor = psqlConnector.getCursor()
-    # Get attibutes
-    cursor.execute(attributes_layer)
-    # Attributes from layer (names)
-    information_layer = cursor.fetchall()
-    layer = ""
-    for attr in information_layer:
-        if attr[0][0].isupper():
-            layer = layer + "\"" + attr[0] + "\", "
-        else:
-            layer = layer + attr[0] + ", "
+    with app.app_context():
+        # get new cursor
+        cursor = psqlConnector.getCursor()
+        # Get attibutes
+        cursor.execute(attributes_layer)
+        # Attributes from layer (names)
+        information_layer = cursor.fetchall()
+        layer = ""
+        for attr in information_layer:
+            if attr[0][0].isupper():
+                layer = layer + "\"" + attr[0] + "\", "
+            else:
+                layer = layer + attr[0] + ", "
 
-    intersection = "(SELECT {2} ST_AsGeojson(ST_Intersection(ST_Transform(the_geom,3857), {1}))" \
-                   "FROM {0} where ST_Intersects(ST_Transform(the_geom,3857), {1}))"
+        intersection = "(SELECT {2} ST_AsGeojson(ST_Intersection(ST_Transform(the_geom,3857), {1}))" \
+                    "FROM {0} where ST_Intersects(ST_Transform(the_geom,3857), {1}))"
 
-    #intersection = "(SELECT {2} ST_AsGeojson(ST_Transform(ST_Intersection(the_geom::geometry, {1}::geometry),3857))" \
-    #               "FROM {0} where ST_Intersects(the_geom::geometry, {1}::geometry))"
+        #intersection = "(SELECT {2} ST_AsGeojson(ST_Transform(ST_Intersection(the_geom::geometry, {1}::geometry),3857))" \
+        #               "FROM {0} where ST_Intersects(the_geom::geometry, {1}::geometry))"
 
-    cursor.execute(intersection.format(layerName, polygon, layer))
-    #Result will be saved as a new layer, also returned as geom WKT
-    #First, save new layer
-    #fig = "CREATE TABLE {0}_{1} AS ".format(layersName[0],datetime.now().strftime("%d_%m_%Y_%H_%M_%S")) + intersection
-    #cursor.execute(fig)
-    result = cursor.fetchall()
-    #psqlConnector.get_db().commit()
-    cursor.close()
+        cursor.execute(intersection.format(layerName, polygon, layer))
+        #Result will be saved as a new layer, also returned as geom WKT
+        #First, save new layer
+        #fig = "CREATE TABLE {0}_{1} AS ".format(layersName[0],datetime.now().strftime("%d_%m_%Y_%H_%M_%S")) + intersection
+        #cursor.execute(fig)
+        result = cursor.fetchall()
+        #psqlConnector.get_db().commit()
+        cursor.close()
     return information_layer, result
 
 #Polygon in a geoJSON
@@ -152,17 +168,18 @@ def dividePolygon(polygon, radius=0):
     return list(polygons)
 
 def threadCall(layer, polygon):
-    attributes = []
-    polygons = []
-    information_layer, result = intersectionLayer(layer, polygon)
-    layer = layer.split(".")[-1]
-    for row in result:
-        polygons.append(json.loads(row[-1])) # polygon
-        attr = {}
-        for attri in range(len(information_layer)):
-            attr.update({layer +"." +information_layer[attri][0]: row[attri]})# attr
-        attributes.append(attr)
-    return {"polygons": polygons, "attributes": attributes}
+    with app.app_context():
+        attributes = []
+        polygons = []
+        information_layer, result = intersectionLayer(layer, polygon)
+        layer = layer.split(".")[-1]
+        for row in result:
+            polygons.append(json.loads(row[-1])) # polygon
+            attr = {}
+            for attri in range(len(information_layer)):
+                attr.update({layer +"." +information_layer[attri][0]: row[attri]})# attr
+            attributes.append(attr)
+        return {"polygons": polygons, "attributes": attributes}
 
 def merge(polygonResultList):
     #Keep intersected polygon, but need intersect and transform from dict to objects
