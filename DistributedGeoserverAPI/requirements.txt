@@ -8,8 +8,8 @@ idna==2.8
 itsdangerous==1.1.0
 Jinja2==2.10.1
 MarkupSafe==1.1.1
-psycopg2-binary==2.8.3
+psycopg2-binary
 requests==2.22.0
-Shapely==1.6.4.post2
+Shapely==1.6.4
 urllib3==1.25.3
 Werkzeug==0.15.6

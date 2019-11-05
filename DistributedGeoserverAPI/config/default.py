@@ -1,9 +1,9 @@
 DBNAME = "gis"
 DBUSER = "docker"
-DBHOST = "mainpostgres"
+DBHOST = "mainPostgres"
 DBPWD = "docker"
 DBPORT = 5432
-GEOSERVER = "http://geoserver:8080/geoserver"
+GEOSERVER = "http://geoservertester:8080/geoserver"
 GEOSERVERUSR = "admin"
 GEOSERVERPWD = "geoserver"
 PORT = 5000

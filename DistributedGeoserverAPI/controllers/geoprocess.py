@@ -15,6 +15,7 @@ from helpers.geoformsGenerator import getWKTQuery, getPolygon
 from copy import deepcopy
 from concurrent.futures import ThreadPoolExecutor, wait
 from root_register import app
+import copy
 
 THREADS = current_app.config.get("THREADS")
 
@@ -195,9 +196,10 @@ def merge(polygonResultList):
     #shp = {"polygons":[], "attributes":[]}
     #shp['polygons'][0] = {"type":"", "coordinates":[]}
     #results = []
-    attributes = []
-    polygons = []
+    
     for shp in polygonResultList:
+        attributes = []
+        polygons = []
         #Each polygon in each shape
         #for polygon in shp['polygons']:
         for polygon in shp['polygons']:
@@ -212,8 +214,11 @@ def merge(polygonResultList):
                     #results.append({'attributes': {**pivot['attributes'][piv_idx], **shp['attributes'][shp_idx]} , 'polygons':mapping(result)})
                     attributes.append({**pivot['attributes'][piv_idx], **shp['attributes'][shp_idx]})
                     polygons.append(mapping(result))
+        #Now, result is the new pivot!
+        result = {"attributes": attributes, "polygons": polygons}
+        pivot = copy.deepcopy(result)
     #return results
-    return {"attributes": attributes, "polygons": polygons}          
+    return pivot          
         
 
 #@current_app.route('/geoprocessing/')
