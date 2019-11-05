@@ -4,15 +4,19 @@ services:
    db:
       image: kartoza/postgis:11.0-2.5
       container_name: 'mainPostgres'
-      ports:
-         - "25434:5432"
+      #ports:
+      #   - "25434:5432"
       env_file:
          - docker-env/db.env
       restart: on-failure
       healthcheck:
         test: "exit 0"
-      #volumes:
-      #   - ./volumes/GeoDbData:/var/lib/postgresql/data   
+      volumes:
+      - type: volume
+        source: pgData # Storage postgis data on host.
+        target: /var/lib/postgresql   
+        consistency: consistent
+      
       
    geoserver:
       container_name: 'geoservertester'
@@ -24,8 +28,8 @@ services:
          source: geoserverdata
          target: /opt/geoserver/data_dir/
          consistency: consistent
-      ports:
-        - "8600:8080"
+      #ports:
+      #  - "8600:8080"
       restart: on-failure
       env_file:
         - docker-env/geoserver.env
@@ -48,3 +52,4 @@ services:
 
 volumes:
    geoserverdata:
+   pgData:
