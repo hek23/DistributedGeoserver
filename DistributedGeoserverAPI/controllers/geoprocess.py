@@ -83,8 +83,6 @@ def intersection():
     end = time.time()
     print(end-start)
     shapeFinal = merge(result)
-    #print(wait(processedLayers))
-    #shapeFinal = "ok"
     end = time.time()
     print("TIME ELAPSED " +str(end - start))
     return jsonify(shapeFinal)
@@ -109,7 +107,6 @@ def intersection():
 
 def intersectionLayer(layerName, polygon):
     # Generate queries
-
     columns_names = "SELECT c.column_name as cName FROM information_schema.columns as c WHERE table_name = '{0}' and column_name != 'the_geom' and column_name != 'fid';"
     #intersection = "(SELECT {2} ST_AsGeojson(ST_Transform(ST_Intersection(the_geom::geometry, {1}::geometry)," \
     #               "4326)) FROM {0} where ST_Intersects(the_geom::geometry, {1}::geometry))"
@@ -168,6 +165,7 @@ def dividePolygon(polygon, radius=0):
     polygons = polygonize(borders)
     return list(polygons)
 
+#Intersect polygon with layer, and format it as an object
 def threadCall(layer, polygon):
     with app.app_context():
         attributes = []
@@ -182,6 +180,7 @@ def threadCall(layer, polygon):
             attributes.append(attr)
         return {"polygons": polygons, "attributes": attributes}
 
+#With a list of Polygons as objects (threadCall), join them in a format that can be used by Visualization
 def merge(polygonResultList):
     #Keep intersected polygon, but need intersect and transform from dict to objects
     #Shapes is List of Objects, which contains Polygons and attributes (lists)
@@ -191,11 +190,6 @@ def merge(polygonResultList):
     #Select shapes[0] as pivot (first to compare) //polygonResultList
 
     pivot = polygonResultList.pop(0) #  OBJECT!!!!!!
-    #print(shape(pivot['polygons'][0]))
-    #print(pivot)
-    #shp = {"polygons":[], "attributes":[]}
-    #shp['polygons'][0] = {"type":"", "coordinates":[]}
-    #results = []
     
     for shp in polygonResultList:
         attributes = []
@@ -211,7 +205,6 @@ def merge(polygonResultList):
                 if(not(result.is_empty)):
                     piv_idx = pivot['polygons'].index(pivot_polygon)
                     shp_idx = shp['polygons'].index(polygon)
-                    #results.append({'attributes': {**pivot['attributes'][piv_idx], **shp['attributes'][shp_idx]} , 'polygons':mapping(result)})
                     attributes.append({**pivot['attributes'][piv_idx], **shp['attributes'][shp_idx]})
                     polygons.append(mapping(result))
         #Now, result is the new pivot!
