@@ -4,8 +4,8 @@ services:
    db:
       image: kartoza/postgis:11.0-2.5
       container_name: 'mainPostgres'
-      ports:
-         - "25434:5432"
+      #ports:
+      #   - "25434:5432"
       env_file:
          - docker-env/db.env
       restart: on-failure
@@ -41,6 +41,7 @@ services:
         timeout: 10s
         retries: 3
    api:
+      container_name: 'geoserverdistapi'
       build:
          context: ./DistributedGeoserverAPI
          dockerfile: pythonApi.dockerfile
@@ -49,33 +50,41 @@ services:
       environment:
          WAIT_HOSTS: mainPostgres:5432
 
-   #redis:
-   #   image: redis
-   #   container_name: redis_visor
-   #   environment:
-   #      save: ''
-   #      requirepass: jYGjFNJg5y7GHjk!
+   redis:
+      image: redis
+      container_name: redis_visor
+      environment:
+         save: ''
+         requirepass: jYGjFNJg5y7GHjk!
 
-   #mongo:
-   #   container_name: some_mongo
-   #   image: mongo:4
-   #   environment:
-   #      MONGO_INITDB_ROOT_USERNAME: root
-   #      MONGO_INITDB_ROOT_PASSWORD: example
-   #      MONGO_INITDB_DATABASE: visordb
-   #   volumes:
-   #   -  type: volume
-   #      source: mongodata
-   #     target: /data/db
-   #      consistency: consistent
-   #   - ./initmongo.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+   mongo:
+      container_name: some_mongo
+      image: mongo:4
+      environment:
+         MONGO_INITDB_ROOT_USERNAME: root
+         MONGO_INITDB_ROOT_PASSWORD: example
+         MONGO_INITDB_DATABASE: visordb
+      volumes:
+      -  type: volume
+         source: mongodata
+         target: /data/db
+         consistency: consistent
+      - ./initmongo.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
    
    #visor:
-   #   image: docker.pkg.github.com/hek23/distributedgeoserver/visor:0.1
+   #   container_name: 'visor'
+   #   build:
+   #      context: ./DistributedGeoserverAPI
+   #      dockerfile: pythonApi.dockerfile
    #   ports:
-   #      - "80:8080"
+   #     - "80:8080" 
+   visor:
+      image: npm:seba
+      ports:
+        - "8080:8080"
+
       
 volumes:
    geoserverdata:
    pgData:
-   #mongodata:
+   mongodata:

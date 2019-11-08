@@ -1,9 +1,11 @@
 from flask import Flask
 import os
+from flask_cors import CORS
 
 #App initialization
 app = Flask(__name__)
-
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+  
 app.config.from_pyfile('../config/default.py')
 
 #Init DB Connections

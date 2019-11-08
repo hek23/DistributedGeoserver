@@ -18,11 +18,16 @@ RUN apk add --virtual .build-deps \
     | xargs -r apk info --installed \
     | sort -u)" && \
     apk add --virtual .rundeps $runDeps
-#RUN rm -rf /home/test
+
+RUN apk add linux-headers
+RUN rm -rf /home/test
+
+EXPOSE 5000
+
 WORKDIR /usr/src/app
 RUN pip install --no-cache -r requirements.txt
 
 ADD https://github.com/ufoscout/docker-compose-wait/releases/download/2.2.1/wait /wait
 RUN chmod +x /wait
 
-CMD /wait && python ./start.py
+CMD /wait && uwsgi --socket 0.0.0.0:5000 --protocol=http -w start:app --enable-threads

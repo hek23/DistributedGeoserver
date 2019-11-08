@@ -1,27 +1,34 @@
-import geojson
+
 from flask import Flask, request, current_app, g
 from flask import jsonify
+
 import time
 import json
 import os
+import geojson
 from datetime import datetime
-import concurrent
+from copy import deepcopy
+
+from concurrent.futures import ThreadPoolExecutor, wait
+from multiprocessing import Process, Queue
+
 from shapely.geometry import shape
 from shapely.ops import triangulate
 from shapely.geometry import mapping
 
 from helpers import psqlConnector
 from helpers.geoformsGenerator import getWKTQuery, getPolygon
-from copy import deepcopy
-from concurrent.futures import ThreadPoolExecutor, wait
 from root_register import app
-import copy
+
+from flask_cors import CORS
 
 THREADS = current_app.config.get("THREADS")
+_pool = current_app.config.get("pool")
 
 #{layers: [], geometry: GEOJSON (geometry part), radius: OPTIONAL float, bufferRadius: float}
 
 @current_app.route('/geoprocessing/intersection', methods=['POST'])
+#@cross_origin()
 def intersection():
     #Here are needed 2 table names
     # {layers: [], geometry: GEOJSON (geometry part), radius: OPTIONAL float, bufferRadius: float}
@@ -62,35 +69,13 @@ def intersection():
 
 
     polygon = getWKTQuery(request.json['geometry'], request.json['radius'])
-
-    ## OPTION 1: LAYER BY PROCESS (Each exec goes to one thread). Threads are defined by layers number
-    polygons = []
-    attributes = []
-
-    #MULTITHREAD START
-    start = time.time()
-
-    executor = ThreadPoolExecutor(max_workers=THREADS)
-    print("THREADING!")
-    processedLayers = []
-    #Use minor number between Threads or Layersqty
-    for layer in layersName:
-        processedResult = executor.submit(threadCall, layer,polygon)
-        processedLayers.append(processedResult)
-    result = [res.result() for res in wait(processedLayers).done]
+###################################################################################################################################
+    
+    return processUsingThread(layersName,polygon)
+###########################################    #MULTITHREAD END #####################################################################
 
 
-    end = time.time()
-    print(end-start)
-    shapeFinal = merge(result)
-    end = time.time()
-    print("TIME ELAPSED " +str(end - start))
-    return jsonify(shapeFinal)
-
-    #MULTITHREAD END
-
-
-    ## OPTION 2: POLYGON DISTRIBUTED
+    ## OPTION 2: LAYER BY PROCESS (Each exec goes to one thread). Threads are defined by layers number
     
 
     #if(len(shapeFinal[])==0): #No response
@@ -147,6 +132,7 @@ def intersectionLayer(layerName, polygon):
         result = cursor.fetchall()
         #psqlConnector.get_db().commit()
         cursor.close()
+        #print("Return from db")
     return information_layer, result
 
 #Polygon in a geoJSON
@@ -209,9 +195,69 @@ def merge(polygonResultList):
                     polygons.append(mapping(result))
         #Now, result is the new pivot!
         result = {"attributes": attributes, "polygons": polygons}
-        pivot = copy.deepcopy(result)
+        pivot = deepcopy(result)
     #return results
     return pivot          
         
+def processUsingThread(layersName,polygon):
 
+    ## OPTION 1: LAYER BY THREAD (Each exec goes to one thread). Threads are defined by layers number
+    polygons = []
+    attributes = []
+
+    #MULTITHREAD START
+    start = time.time()
+
+    executor = ThreadPoolExecutor(max_workers=len(layersName))
+    print("THREADING!")
+    processedLayers = []
+    #Use minor number between Threads or Layersqty
+    for layer in layersName:
+        processedResult = executor.submit(threadCall, layer,polygon)
+        processedLayers.append(processedResult)
+    result = [res.result() for res in wait(processedLayers).done]
+
+    end = time.time()
+    print(end-start)
+    shapeFinal = merge(result)
+    end = time.time()
+    print("TIME ELAPSED " +str(end - start))
+    return jsonify(shapeFinal)
+
+def processUsingProcesses(layersName,polygon):
+    #polygons = Queue() #Queue with format {ID: Object}
+    #attributes = Queue() #Queue with format {ID: Object}
+    result = Queue() #{"attributes": attributes, "polygons": polygons}
+    #MULTITHREAD START
+    start = time.time()
+    #Use layer number of process
+    for layer in layersName:
+        p = Process(target=processCall, args=(layer,polygon,result,))
+        p.start()
+        p.join()
+
+
+    print("FIN")
+    size = result.qsize()
+    print(size)
+    result = [result.get(index) for index in range(size)]
+
+    end = time.time()
+    #print(end-start)
+    shapeFinal = merge(result)
+    end = time.time()
+    #print("TIME ELAPSED " +str(end - start))
+    return jsonify(shapeFinal)
+
+#Wrapper for process
+def processCall (layer,polygon,queue):
+    #print('parent process:', os.getppid())
+    #print('process id:', os.getpid())
+    element = threadCall(layer,polygon)
+    #print("TCall - Check 4")
+    queue.put(element)
+    #print("size " + queue.qsize())
+    #print("TCall - Check 4")
+    queue.close()
+    return 0
 #@current_app.route('/geoprocessing/')
