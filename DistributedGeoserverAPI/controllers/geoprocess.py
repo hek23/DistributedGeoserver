@@ -9,8 +9,8 @@ import geojson
 from datetime import datetime
 from copy import deepcopy
 
-from concurrent.futures import ThreadPoolExecutor, wait
-from multiprocessing import Process, Queue
+from concurrent.futures import ThreadPoolExecutor, wait, as_completed
+from multiprocessing import Process, Queue, Pool
 
 from shapely.geometry import shape
 from shapely.ops import triangulate
@@ -18,17 +18,18 @@ from shapely.geometry import mapping
 
 from helpers import psqlConnector
 from helpers.geoformsGenerator import getWKTQuery, getPolygon
+from helpers.parallelGenerator import getProcessorPool, getThreads
 from root_register import app
 
 from flask_cors import CORS
 
-THREADS = current_app.config.get("THREADS")
-_pool = current_app.config.get("pool")
+from numpy import asarray, array_split, array, ndarray
+from math import floor
+
 
 #{layers: [], geometry: GEOJSON (geometry part), radius: OPTIONAL float, bufferRadius: float}
 
 @current_app.route('/geoprocessing/intersection', methods=['POST'])
-#@cross_origin()
 def intersection():
     #Here are needed 2 table names
     # {layers: [], geometry: GEOJSON (geometry part), radius: OPTIONAL float, bufferRadius: float}
@@ -71,24 +72,9 @@ def intersection():
     polygon = getWKTQuery(request.json['geometry'], request.json['radius'])
 ###################################################################################################################################
     
-    return processUsingThread(layersName,polygon)
+    return resultFormatter(intersection(layersName,polygon))
 ###########################################    #MULTITHREAD END #####################################################################
 
-
-    ## OPTION 2: LAYER BY PROCESS (Each exec goes to one thread). Threads are defined by layers number
-    
-
-    #if(len(shapeFinal[])==0): #No response
-    #    print(shapeFinal)
-    #    return jsonify({"error":"No data suitable to query"}), 404
-    #else:
-    #    #return jsonify({"polygons": polygons, "attributes": attributes}), 200
-    #    return jsonify(result),200    
-
-
-
-
-    ##########################################
 
 def intersectionLayer(layerName, polygon):
     # Generate queries
@@ -135,129 +121,104 @@ def intersectionLayer(layerName, polygon):
         #print("Return from db")
     return information_layer, result
 
-#Polygon in a geoJSON
-def dividePolygon(polygon, radius=0):
-    minx, miny, maxx, maxy = polygon.bounds
-    #remainder goes to last div. Division left to right
-    intervalx = (maxx - minx)/THREADS
-    intervaly = (maxy - miny)/THREADS
-    lines = []
-    for i in range(THREADS):
-        line = LineString([(minx + i*intervalx, miny), (minx + i*intervalx, maxy)])
-        lines.append(line)
-    lines.append(getPolygon().boundary)
-    merged = linemerge(lines)
-    borders = unary_union(merged)
-    polygons = polygonize(borders)
-    return list(polygons)
-
-#Intersect polygon with layer, and format it as an object
-def threadCall(layer, polygon):
+# Return array of objects {"attributes": {}, "polygons": {}}
+def formatShape(layer,polygon):
     with app.app_context():
-        attributes = []
-        polygons = []
+        results = []
         information_layer, result = intersectionLayer(layer, polygon)
         layer = layer.split(".")[-1]
         for row in result:
-            polygons.append(json.loads(row[-1])) # polygon
+            #Each result will be one object
             attr = {}
             for attri in range(len(information_layer)):
-                attr.update({layer +"." +information_layer[attri][0]: row[attri]})# attr
-            attributes.append(attr)
-        return {"polygons": polygons, "attributes": attributes}
+                attr.update({layer +"." +information_layer[attri][0]: row[attri]}) # attr
+            results.append({"polygons": json.loads(row[-1]), "attributes": attr})
+        return results
 
-#With a list of Polygons as objects (threadCall), join them in a format that can be used by Visualization
-def merge(polygonResultList):
-    #Keep intersected polygon, but need intersect and transform from dict to objects
-    #Shapes is List of Objects, which contains Polygons and attributes (lists)
+#Intersect two shapes or one and a list of them formatted.
+#Is recursive
+#If shape2 is empty list, returns
+def intersectShapes(shapeList):
+    if(len(shapeList) == 1):
+        #Recursive finish
+        return shapeList[0]
+    #Before parallelize, order shapes, using polygon quantity
+    #shapeList = [shape1,shape2]
+    shapeList.sort(key = len)
+    #The smallest shape will be used as a constant for comparison
+    #splitting the other between threads
+    smallShape = shapeList.pop(0)
+    polygonList = array(shapeList.pop(0))
+    num = min(len(os.sched_getaffinity(0)), current_app.config["NODES"])
 
-    #shapes = [[shape(polygon) for polygon in results['polygons']] for results in polygonResultList]
+    polygonList = array_split(polygonList,num)
+
+    #MULTITHREAD START
+    executor = getThreads()
+    processedLayers = []
+    for polygonSet in polygonList:
+        processedResult = executor.submit(intersect, polygonSet, smallShape)
+        processedLayers.append(processedResult)
+    #At processedLayers will be a list of objects like 
+    # {attributes: [], polygons:[]} that need to be joined
+    results = []
+    for res in as_completed(processedLayers):
+        results.extend(res.result())
+
+    shapeList.append(results)
+    return intersectShapes(shapeList)
+
+#Shape1 and Shape2 are list of {attributes: [], polygons:[]} Return same format
+def intersect(shape1, shape2):
+    res = []
+    #Each polygon in each shape
+    for polygon1 in shape1:    
+        for polygon2 in shape2:
+            #Transform to object
+            r1 = shape(polygon1['polygons'])
+            r2 = shape(polygon2['polygons'])
+            #Calculate intersection
+            result = r1.intersection(r2)
+            #If is not empty, add to result
+            if(not(result.is_empty)):
+                res.append({"attributes": {**polygon1['attributes'], **polygon2['attributes']}, "polygons": mapping(result)})
+    return res      
+
+def intersection(layersName, polygon):
+    layerSet = []
+    #Get layers info (uses Threads for paralell query)
+    executor = getThreads(len(layersName))
+    for layer in layersName:
+        formattedLayer = executor.submit(formatShape, layer,polygon)
+        layerSet.append(formattedLayer)
+    results = []
+    for res in as_completed(layerSet):
+        results.append(res.result())
+    #Call till layerSet is empty
+    polygons = intersectShapes(results)
+    return polygons
     
-    #Select shapes[0] as pivot (first to compare) //polygonResultList
-
-    pivot = polygonResultList.pop(0) #  OBJECT!!!!!!
-    
-    for shp in polygonResultList:
-        attributes = []
-        polygons = []
-        #Each polygon in each shape
-        #for polygon in shp['polygons']:
-        for polygon in shp['polygons']:
-            #Each polygon in pivot
-            for pivot_polygon in pivot['polygons']:
-                r1 = shape(polygon)
-                r2 = shape(pivot_polygon)
-                result = r1.intersection(r2)
-                if(not(result.is_empty)):
-                    piv_idx = pivot['polygons'].index(pivot_polygon)
-                    shp_idx = shp['polygons'].index(polygon)
-                    attributes.append({**pivot['attributes'][piv_idx], **shp['attributes'][shp_idx]})
-                    polygons.append(mapping(result))
-        #Now, result is the new pivot!
-        result = {"attributes": attributes, "polygons": polygons}
-        pivot = deepcopy(result)
-    #return results
-    return pivot          
-        
-def processUsingThread(layersName,polygon):
-
-    ## OPTION 1: LAYER BY THREAD (Each exec goes to one thread). Threads are defined by layers number
+#Reformats to {attributes:[], polygons:[]}. Must be corresponding
+def resultFormatter(objectList):
+    #As indexes must match, a controlled and limited access to
+    #final data containers are done
+    #Distribute the objectList on "even" parts
+    threadCount = min(len(os.sched_getaffinity(0)), current_app.config["NODES"])
+    #Transform list to array, for array_split use
+    objectList = array_split(array(objectList),threadCount)
+    futureRes = []
+    executor = getThreads()
+    #Now, each element from objectList is ready to work parallel
+    for partialList in objectList:
+        splitted = executor.submit(splitter, partialList)
+        futureRes.append(splitted)
+    #We care order, so add to results, only if finished
     polygons = []
     attributes = []
+    for res in as_completed(futureRes):
+        attributes.extend(res.result()[0])
+        polygons.extend(res.result()[1])
+    return jsonify({"attributes":attributes, "polygons": polygons})
 
-    #MULTITHREAD START
-    start = time.time()
-
-    executor = ThreadPoolExecutor(max_workers=len(layersName))
-    print("THREADING!")
-    processedLayers = []
-    #Use minor number between Threads or Layersqty
-    for layer in layersName:
-        processedResult = executor.submit(threadCall, layer,polygon)
-        processedLayers.append(processedResult)
-    result = [res.result() for res in wait(processedLayers).done]
-
-    end = time.time()
-    print(end-start)
-    shapeFinal = merge(result)
-    end = time.time()
-    print("TIME ELAPSED " +str(end - start))
-    return jsonify(shapeFinal)
-
-def processUsingProcesses(layersName,polygon):
-    #polygons = Queue() #Queue with format {ID: Object}
-    #attributes = Queue() #Queue with format {ID: Object}
-    result = Queue() #{"attributes": attributes, "polygons": polygons}
-    #MULTITHREAD START
-    start = time.time()
-    #Use layer number of process
-    for layer in layersName:
-        p = Process(target=processCall, args=(layer,polygon,result,))
-        p.start()
-        p.join()
-
-
-    print("FIN")
-    size = result.qsize()
-    print(size)
-    result = [result.get(index) for index in range(size)]
-
-    end = time.time()
-    #print(end-start)
-    shapeFinal = merge(result)
-    end = time.time()
-    #print("TIME ELAPSED " +str(end - start))
-    return jsonify(shapeFinal)
-
-#Wrapper for process
-def processCall (layer,polygon,queue):
-    #print('parent process:', os.getppid())
-    #print('process id:', os.getpid())
-    element = threadCall(layer,polygon)
-    #print("TCall - Check 4")
-    queue.put(element)
-    #print("size " + queue.qsize())
-    #print("TCall - Check 4")
-    queue.close()
-    return 0
-#@current_app.route('/geoprocessing/')
+def splitter(partialList):
+    return [[obj["attributes"] for obj in partialList],[obj["polygons"] for obj in partialList]]
