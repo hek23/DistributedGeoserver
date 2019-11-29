@@ -8,10 +8,11 @@ CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 app.config.from_pyfile('../config/default.py')
 
 #Init DB Connections
-from helpers import psqlConnector
+from helpers import psqlConnector,redisManager
 
 #Register Databases in app
 psqlConnector.init_app(app)
+redisManager.init_app(app)
 
 #Define appContext for import modules that require flask_app
 with app.app_context():

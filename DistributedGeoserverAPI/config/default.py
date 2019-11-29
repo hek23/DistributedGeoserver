@@ -6,6 +6,9 @@ DBPORT = 5432
 GEOSERVER = "http://geoservertester:8080/geoserver"
 GEOSERVERUSR = "admin"
 GEOSERVERPWD = "geoserver"
-PORT = 8000
-THREADS = 2
+REDISHOST = ""
+REDISPORT = ""
+REDISDB = "1"
+PORT = 5000
+THREADS = 8
 CONN_STRING = "dbname='{}' user='{}' password='{}' host='{}' port='{}'".format(DBNAME, DBUSER, DBPWD, DBHOST, DBPORT)

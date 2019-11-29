@@ -88,9 +88,9 @@ def hello_world():
 def upload():
     if request.method == 'POST':
           f = request.files['file']
-          zipshape = zipfile.ZipFile(f)
-          test = zipshape.namelist()
-          print(test)
+          #zipshape = zipfile.ZipFile(f)
+          #test = zipshape.namelist()
+          #print(test)
           ws = request.form['workspace']
           ds = request.form['datastore']
           importSHP(ds,ws,f)

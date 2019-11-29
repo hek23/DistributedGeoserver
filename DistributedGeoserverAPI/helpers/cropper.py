@@ -8,9 +8,9 @@ def cropByPolygon(layerName, polygon):
     tableName = layerName.split(".")[-1]
     if(tableName[0].isupper()):
         layerName = layerName.replace(tableName , "\"" + tableName + "\"")
-        tableName = "\"" + tableName + "\""
+        #tableName = "\"" + tableName + "\""
     attributes_layer = columns_names.format(tableName)
-    print(layerName)
+    print(attributes_layer)
     
     with globalApp.app_context():
         # get new cursor
