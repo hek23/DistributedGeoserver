@@ -5,12 +5,12 @@ from helpers.intersector import processIntersection
 from helpers.formatter import resultFormatter
 
 
-#{layers: [], geometry: GEOJSON (geometry part), radius: OPTIONAL float, bufferRadius: float}
+#{layers: [], geometry: GEOJSON (geometry part), radius: OPTIONAL float}
 
 @current_app.route('/geoprocessing/intersection', methods=['POST'])
 def intersection():
     #Here are needed 2 table names
-    # {layers: [], geometry: GEOJSON (geometry part), radius: OPTIONAL float, bufferRadius: float}
+    # {layers: [], geometry: GEOJSON (geometry part), radius: OPTIONAL float}
     # Type: Figure (Polygon, Line, Point, Circle)
     # Radius: If it's Circle => Radius from first point in points. Ommited in other terms
     # bufferRadius: Radius to buffer
@@ -20,7 +20,7 @@ def intersection():
         # FAIL
         return "BAD PARAMETERS"
     if(request.json['geometry'].keys()):
-        if (request.json['geometry']['type'].lower == "circle"):
+        if (request.json['geometry']['type'].lower() == "circle"):
             if ("radius" in request.json):
                if isinstance(request.json['radius'], (int, float)):
                    request.json['radius'] = float(request.json['radius'])
