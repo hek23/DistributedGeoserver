@@ -1,0 +1,22 @@
+version: '3.7'
+
+services:
+   db:
+      image: kartoza/postgis:12.0
+      container_name: 'mainPostgres'
+      hostname: 'mainPostgres'
+      ports:
+         - "25434:5432"
+      env_file:
+         - docker-env/db.env
+      restart: on-failure
+      healthcheck:
+        test: "exit 0"
+      volumes:
+      - type: volume
+        source: pgData # Storage postgis data on host.
+        target: /var/lib/postgresql   
+        consistency: consistent
+
+volumes:
+   pgData:

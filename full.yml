@@ -1,0 +1,18 @@
+version: '3.7'
+
+services:
+   api:
+      extends:
+         file: api.yml
+         service: api
+   geoserver:
+      extends:
+         file: geoserver.yml
+         service: geoserver
+   db:
+      extends:
+         file: postgis.yml
+         service: db
+         
+
+    

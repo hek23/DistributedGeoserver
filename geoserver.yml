@@ -1,25 +1,9 @@
 version: '3.7'
 
-services:
-   db:
-      image: kartoza/postgis:11.0-2.5
-      container_name: 'mainPostgres'
-      ports:
-         - "25434:5432"
-      env_file:
-         - docker-env/db.env
-      restart: on-failure
-      healthcheck:
-        test: "exit 0"
-      volumes:
-      - type: volume
-        source: pgData # Storage postgis data on host.
-        target: /var/lib/postgresql   
-        consistency: consistent
-      
-      
+services:      
    geoserver:
       container_name: 'geoservertester'
+      hostname: 'geoservertester'
       build: 
          context: ./dockerImages
          dockerfile: geoserver.dockerfile
@@ -33,62 +17,13 @@ services:
       restart: on-failure
       env_file:
         - docker-env/geoserver.env
-      depends_on:
-        - db
+      #depends_on:
+      #  - db
       healthcheck:
         test: curl --fail -s http://localhost:8080/ || exit 1
         interval: 1m30s
         timeout: 10s
-        retries: 3
-   api:
-      container_name: 'geoserverdistapi'
-      build:
-         context: ./DistributedGeoserverAPI
-         dockerfile: pythonApi.dockerfile
-      ports:
-        - "5000:5000"
-      environment:
-         WAIT_HOSTS: mainPostgres:5432
-
-   redis:
-      image: redis
-      container_name: redis_visor
-      environment:
-         save: ''
-         requirepass: jYGjFNJg5y7GHjk!
-      ports:
-        - "6379:6379"
-
-   mongo:
-      container_name: some_mongo
-      image: mongo:4
-      ports:
-        - "27017:27017"
-      environment:
-         MONGO_INITDB_ROOT_USERNAME: root
-         MONGO_INITDB_ROOT_PASSWORD: example
-         MONGO_INITDB_DATABASE: visordb
-      volumes:
-      -  type: volume
-         source: mongodata
-         target: /data/db
-         consistency: consistent
-      - ./initmongo.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+        retries: 3 
    
-   visor:
-      image: npm:seba
-      ports:
-        - "8080:8080"
-   
-   visorgo:
-      container_name: visorback
-      image: visor-go:0.1z
-      ports:
-        - "2000:2000"
-   
-
-      
 volumes:
    geoserverdata:
-   pgData:
-   mongodata:

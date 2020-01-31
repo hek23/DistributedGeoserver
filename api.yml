@@ -1,0 +1,13 @@
+version: '3.7'
+
+services:
+   api:
+      container_name: 'geoserverdistapi'
+      hostname: 'geoserverdistapi'
+      build:
+         context: ./DistributedGeoserverAPI
+         dockerfile: pythonApi.dockerfile
+      ports:
+        - "6060:5000"   
+      environment:
+         WAIT_HOSTS: mainPostgres:5432
