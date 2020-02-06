@@ -102,10 +102,10 @@ if __name__ == "__main__":
         #
         color = np.concatenate((color,subcolor))
         actualUserQty = 1 #Reset internal user iterator
-        actualQueryQty = actualQueryQty + 10 #Iterator
+        actualQueryQty = actualQueryQty + 1 #Iterator
 
     fig, ax = plt.subplots()
-    scatter = ax.scatter(x, y, c=color, s=np.array(1))
+    scatter = ax.scatter(color, y, c=x, s=np.array(1))
 
     # produce a legend with the unique colors from the scatter
     legend1 = ax.legend(*scatter.legend_elements(),
