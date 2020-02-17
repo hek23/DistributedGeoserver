@@ -3,12 +3,15 @@ from flask import request, current_app
 from helpers.geoformsGenerator import getWKTQuery, getPolygon
 from helpers.intersector import processIntersection
 from helpers.formatter import resultFormatter
-
+import time
 
 #{layers: [], geometry: GEOJSON (geometry part), radius: OPTIONAL float}
 
 @current_app.route('/geoprocessing/intersection', methods=['POST'])
 def intersection():
+    print("New Query")
+    t = time.time()
+    print("Time: "+ t)
     #Here are needed 2 table names
     # {layers: [], geometry: GEOJSON (geometry part), radius: OPTIONAL float}
     # Type: Figure (Polygon, Line, Point, Circle)
@@ -42,4 +45,7 @@ def intersection():
 
     polygon = getWKTQuery(request.json['geometry'], request.json['radius'])
 
-    return resultFormatter(processIntersection(layersName,polygon))
+    a= resultFormatter(processIntersection(layersName,polygon))
+    print("Finish")
+    print("TIME ELAPSED: "+(time.time() - t))
+    return a
