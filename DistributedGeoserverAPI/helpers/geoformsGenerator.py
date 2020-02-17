@@ -12,7 +12,7 @@ def getWKTQuery(geojsonObject, radius):
       return "ST_Transform(the_geom,3857)"
 
    figure = "ST_GeomFromText('"+getPolygon(geojsonObject,radius).wkt + "',3857)"
-   print(figure)
+   #print(figure)
    return figure
 
 
@@ -22,7 +22,7 @@ def getPolygon(geojsonObject,radius):
       geojsonObject['type'] = "Point"
       geojsonObject['coordinates'] = geojsonObject['coordinates'][0]
    g2 = shape(geojsonObject)
-   print(radius)
+   #print(radius)
    if (radius != 0):
       g2 = g2.buffer(float(radius))
    

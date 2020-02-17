@@ -10,7 +10,7 @@ def cropByPolygon(layerName, polygon):
         layerName = layerName.replace(tableName , "\"" + tableName + "\"")
         #tableName = "\"" + tableName + "\""
     attributes_layer = columns_names.format(tableName)
-    print(attributes_layer)
+    #print(attributes_layer)
     
     with globalApp.app_context():
         # get new cursor

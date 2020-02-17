@@ -8,6 +8,7 @@ from statistics import mean, stdev
 import concurrent.futures
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 
 geomType = {
     0: "Point",
@@ -16,7 +17,6 @@ geomType = {
     3: "Polygon",
     4: "Circle"
 }
-
 def newParam():
     polygonCase21 = {
     "layers":[
@@ -47,75 +47,96 @@ def intersection():
     #print(r.json())
     return finishTime - startTime
 
-def query(numTests, id):
+def query(numTests, numUsers):
     accum = []
     while numTests>0:
         accum.append(intersection())
         numTests = numTests - 1
-    #print("Average Time Thread "+ str(threading.get_ident())+ " "+ str(mean(accum)))
-    #print("Std Deviation: " + str(threading.get_ident()) +" "+ str(stdev(accum)))
-    #return (id, mean(accum), stdev(accum))
-    time.sleep(random.uniform(0,5))
-    return (id, accum)
+    return mean(accum)
 
 def generateTestGraph(numUsers,numTests):
     with concurrent.futures.ThreadPoolExecutor(max_workers=numUsers) as executor:
-        results = [executor.submit(query, numTests, i) for i in range(numUsers)]
+        results = [executor.submit(query, numTests, numUsers) for i in range(numUsers)]
         suby =[]
-        #Inside With: Calls when thread finishes.
-        #Outside With: Wait for all threads, then execute
         for f in concurrent.futures.as_completed(results):
             r= f.result()
-            suby.extend(r[1])
-            print("Average Time Thread "+ str(r[0])+": "+ str(mean(r[1]))+" \n"+ "CV: " + str(stdev(r[1])/mean(r[1])))
-        #Now, add to general data set as a group
-        #Each graph must have X and Y, with data correlated by index
-        #For X Axis, we need to specify that is numUsers users asociated to certain time
-        subx = np.full(len(suby), numUsers) #numUsers * numTests
-        #print(subx)
-        #For Y Axis, is suby (already created)
-        #For matplot these must be numpy arrays
-        suby = np.array(suby)
-        return subx, suby
+            suby.append(r)
+        if(len(suby)==1):
+            suby.append(r)
+        return mean(suby)
+
+def graphNusers(maxTestQty, maxUsersQty, jumpQueries,initialQuery):
+    actualQueryQty = initialQuery #Quantity of Queries PER USER
+    actualUserQty = 1 #Quantity of concurrent Users
+    log = open("log.log", "w")
+    x = np.arange(initialQuery,maxTestQty+1,jumpQueries,dtype=int)
+    #X is number of tests 
+    #Y is time
+    #Z is concurrent Users at the time
+    #Is need to generate all Y with X, at a given Z (each Z will generate a graph)
+    times = np.empty(0)
+    vari = np.empty(0)
+    colors = mcolors.CSS4_COLORS
+    print("Max. Queries per user: {}".format(maxTestQty))
+    log.write("Max. Queries per user: {}".format(maxTestQty)+'\n')
+    print("Max. Users concurrent: {}".format(maxUsersQty))
+    log.write("Max. Users concurrent: {}".format(maxUsersQty)+'\n')
+    print("Jump Q factor: {}".format(jumpQueries))
+    log.write("Jump Q factor: {}".format(jumpQueries)+'\n')
+    print("Initial Queries: {}".format(initialQuery))
+    log.write("Initial Queries: {}".format(initialQuery)+'\n')
+    while(actualUserQty<=maxUsersQty): 
+        print("Quering {} Users".format(actualUserQty))
+        log.write("Quering {} Users".format(actualUserQty)+'\n')
+        y = np.empty(0,dtype=float)
+        while(actualQueryQty<=maxTestQty):
+            result = generateTestGraph(actualUserQty,actualQueryQty)
+            y= np.append(y,result[0])
+            print("{} Users, {} queries, Mean: {}".format(actualUserQty, actualQueryQty, result))
+            log.write("{} Users, {} queries, Mean: {}".format(actualUserQty, actualQueryQty, result)+'\n')
+            actualQueryQty = actualQueryQty + jumpQueries
+        #Save Y
+        times=np.append(times,y)
+        actualQueryQty = initialQuery
+        style = '^C{}:'.format(actualUserQty%10)
+        #plt.scatter(x, y, label='data')
+        plt.plot(x, y, style, label="{} users".format(actualUserQty))
+        plt.xlabel('Queries')
+        plt.ylabel('Time [s]')
+        #plt.title('Fitting primes')
+        actualUserQty = actualUserQty + 1
+    plt.legend()
+    np.save("times",times)
+    np.save("queries", x)
+    np.save("users", np.arange(1,maxUsersQty+1))
+    plt.savefig('Graph.png')
+    log.close()
+    return 0
+
+def graphXUsers(maxUsers,numTests):
+    x = np.arange(1,maxUsers+1,1,dtype=int)
+    y = np.empty(0,dtype=float)
+    for i in x:
+        print(str(i) + " users\n")
+        y = np.append(y,generateTestGraph(i,numTests))
+    np.savetxt("graphY.gz", y, delimiter=',')
+    np.savetxt("graphX.gz", x, delimiter=',')
+    plt.plot(x, y, '^C2:')
+    plt.xlabel('Users')
+    plt.ylabel('Time [s]')
+    return 0
 
 
 if __name__ == "__main__":
     maxTestQty = int(argv[2])
     maxUsersQty = int(argv[3])
-    actualQueryQty = 10 #Quantity of Queries PER USER
-    actualUserQty = 1 #Quantity of concurrent Users
-    #Test type(?)
-    x = np.empty(0,dtype=int)
-    y = np.empty(0,dtype=int)
-    color = np.empty(0,dtype=int)
-    while (actualQueryQty<=maxTestQty): #Iterate through queryQty, creating layers of info
-        while(actualUserQty<=maxUsersQty): #Iterate through UserQty, creating "data"
-            print("MaxUsersQ: "+ str(actualUserQty) + " TestsQ: "+str(actualQueryQty))
-            newx, newy = generateTestGraph(actualUserQty,actualQueryQty)
-            #print(newx)
-            x= np.concatenate((x,newx))
-            y= np.concatenate((y,newy))
-            actualUserQty = actualUserQty + 1
-        #As these correspond to one particular query type (shape)
-        #And query quantity (color), we set the variables to be applied using the length
-        subcolor = np.full(int(actualQueryQty*((maxUsersQty*(maxUsersQty+1))/2)),actualQueryQty,dtype=int)
-        #
-        color = np.concatenate((color,subcolor))
-        actualUserQty = 1 #Reset internal user iterator
-        actualQueryQty = actualQueryQty + 1 #Iterator
+    if(len(argv)>4):
+        jumpQueries = int(argv[4])
+        initialQuery = int(argv[5])
+    #graphNusers(maxTestQty, maxUsersQty, jumpQueries,initialQuery)
+    graphXUsers(maxUsersQty,maxTestQty)
+    plt.show()    
 
-    fig, ax = plt.subplots()
-    scatter = ax.scatter(color, y, c=x, s=np.array(1))
 
-    # produce a legend with the unique colors from the scatter
-    legend1 = ax.legend(*scatter.legend_elements(),
-                    loc="lower left", title="Classes")
-    ax.add_artist(legend1)
 
-    # produce a legend with a cross section of sizes from the scatter
-    handles, labels = scatter.legend_elements(prop="sizes", alpha=0.6)
-    legend2 = ax.legend(handles, labels, loc="upper right", title="Sizes")
-
-    plt.show()
-    
 
