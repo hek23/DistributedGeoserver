@@ -11,7 +11,7 @@ import time
 def intersection():
     print("New Query")
     t = time.time()
-    print("Time: "+ t)
+    print("Time: "+ str(t))
     #Here are needed 2 table names
     # {layers: [], geometry: GEOJSON (geometry part), radius: OPTIONAL float}
     # Type: Figure (Polygon, Line, Point, Circle)
@@ -47,5 +47,5 @@ def intersection():
 
     a= resultFormatter(processIntersection(layersName,polygon))
     print("Finish")
-    print("TIME ELAPSED: "+(time.time() - t))
+    print("TIME ELAPSED: "+str(time.time() - t))
     return a
